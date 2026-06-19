@@ -48,7 +48,6 @@
     .toast.success { background: #10b981; }
     .toast.error { background: #ef4444; }
     
-    /* Desktop background pattern */
     @media (min-width: 768px) {
       body {
         background: linear-gradient(135deg, #f5f3f0 0%, #e8e4df 50%, #f0ece8 100%);
@@ -60,18 +59,18 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- App Container - Fully Responsive -->
+  <!-- App Container -->
   <div class="w-full sm:max-w-[440px] bg-white sm:rounded-[40px] shadow-none sm:shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative flex flex-col h-screen sm:h-[750px] sm:max-h-[850px]">
 
     <!-- Header -->
-    <div class="px-5 sm:px-6 pt-5 sm:pt-7 pb-3 sm:pb-4 flex justify-between items-center">
+    <div id="appHeader" class="px-5 sm:px-6 pt-5 sm:pt-7 pb-3 sm:pb-4 flex justify-between items-center">
       <div>
-        <h2 class="font-bold text-xl sm:text-2xl text-[#1e1e2f] tracking-[-0.3px]">Hey, Alex 👋</h2>
+        <h2 id="greetingText" class="font-bold text-xl sm:text-2xl text-[#1e1e2f] tracking-[-0.3px]">Hey, there 👋</h2>
         <p class="text-xs sm:text-sm text-[#6b6b7b] font-medium mt-1">Keep your spending smart</p>
       </div>
-      <div class="bg-[#fef1ea] w-10 h-10 sm:w-12 sm:h-12 rounded-[24px] sm:rounded-[28px] flex items-center justify-center text-lg sm:text-2xl text-[#d96c4a] border-2 border-[#ffe3d6]">
-        <i class="fas fa-user-graduate"></i>
-      </div>
+     <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center overflow-hidden ">
+  <img src="2.png" alt="Profile" class="w-full h-full object-cover">
+</div>
     </div>
 
     <!-- Balance Card -->
@@ -93,7 +92,7 @@
     </div>
 
     <!-- Quick Category Tags -->
-    <div class="mx-4 sm:mx-5 mb-4 sm:mb-6">
+    <div class="mx-4 sm:mx-5 mb-4 sm:mb-6" id="quickAddSection">
       <div class="flex justify-between items-center mb-3 sm:mb-3.5">
         <h3 class="font-semibold text-base sm:text-lg text-[#1e1e2f]">⚡ Quick add</h3>
         <span id="clearSelection" class="text-[10px] sm:text-xs text-[#d96c4a] font-semibold cursor-pointer hover:opacity-70">clear</span>
@@ -102,7 +101,7 @@
     </div>
 
     <!-- Add Expense Trigger -->
-    <div class="mx-4 sm:mx-5 mb-4 sm:mb-5 flex gap-2 sm:gap-2.5 items-center">
+    <div class="mx-4 sm:mx-5 mb-4 sm:mb-5 flex gap-2 sm:gap-2.5 items-center" id="addExpenseSection">
       <div id="openModalTrigger" class="flex-1 bg-[#f8fafc] rounded-[24px] sm:rounded-[30px] py-1 sm:py-1.5 pl-[14px] sm:pl-[18px] pr-1 sm:pr-1.5 flex items-center border border-[#e2e8f0] focus-within:border-[#1e293b] focus-within:shadow-[0_0_0_2px_rgba(30,41,59,0.1)] cursor-pointer">
         <i class="fas fa-plus-circle text-[#94a3b8] text-xs sm:text-sm"></i>
         <input type="text" placeholder="Add expense..." readonly id="modalPlaceholder" class="border-none bg-transparent py-2 sm:py-2.5 px-1.5 sm:px-2 text-sm sm:text-[0.95rem] w-full outline-none font-medium text-[#0f172a] placeholder:text-[#94a3b8] cursor-pointer">
@@ -112,20 +111,68 @@
       </button>
     </div>
 
-    <!-- Transaction History -->
-    <div id="expenseListContainer" class="flex-1 mx-4 sm:mx-5 mb-4 sm:mb-5 overflow-y-auto pr-1 custom-scrollbar">
-      <div class="text-center py-8 text-[#94a3b8] text-sm">
-        <i class="fas fa-spinner fa-spin text-2xl mb-2.5 block"></i>
-        Loading...
+    <!-- Main Content Area -->
+    <div id="mainContent" class="flex-1 mx-4 sm:mx-5 overflow-y-auto pr-1 custom-scrollbar">
+      
+      <!-- Transaction History -->
+      <div id="expenseListContainer">
+        <div class="text-center py-8 text-[#94a3b8] text-sm">
+          <i class="fas fa-spinner fa-spin text-2xl mb-2.5 block"></i>
+          Loading...
+        </div>
+      </div>
+
+      <!-- Profile Panel -->
+      <div id="profilePanel" class="hidden">
+        <div class="text-center mb-6 mt-2">
+          <div class="bg-[#fef1ea] w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-3 border-4 border-[#ffe3d6]">
+            <span id="profileInitial" class="text-2xl sm:text-3xl font-bold text-[#d96c4a]">?</span>
+          </div>
+          <h3 id="profileName" class="font-bold text-lg text-[#1e1e2f]">User</h3>
+          <p id="profileEmail" class="text-xs text-[#6b6b7b]">loading...</p>
+        </div>
+
+        <div class="space-y-4 pb-4">
+          <div>
+            <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1.5">Full Name</label>
+            <input type="text" id="editName" class="w-full py-3 px-4 border border-[#e2e8f0] rounded-[16px] text-sm bg-[#f8fafc] outline-none focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all">
+          </div>
+          <div>
+            <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1.5">Currency</label>
+            <select id="editCurrency" class="w-full py-3 px-4 border border-[#e2e8f0] rounded-[16px] text-sm bg-[#f8fafc] outline-none focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all appearance-none">
+              <option value="USD">🇺🇸 USD</option>
+              <option value="PHP">🇵🇭 PHP</option>
+              <option value="EUR">🇪🇺 EUR</option>
+              <option value="GBP">🇬🇧 GBP</option>
+              <option value="INR">🇮🇳 INR</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1.5">Monthly Budget</label>
+            <input type="number" id="editBudget" placeholder="1000.00" step="0.01" min="0" class="w-full py-3 px-4 border border-[#e2e8f0] rounded-[16px] text-sm bg-[#f8fafc] outline-none focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all">
+          </div>
+          <button id="saveProfileBtn" class="w-full py-3.5 rounded-[16px] font-semibold text-sm bg-[#1e293b] text-white shadow-[0_6px_14px_rgba(15,23,42,0.2)] hover:bg-[#0f172a] active:scale-[0.98] transition-all">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+          <div class="pt-4 border-t border-[#f1f5f9]">
+            <p class="text-[10px] sm:text-xs font-semibold text-[#94a3b8] uppercase tracking-wider mb-3">Account</p>
+            <button id="logoutBtn" class="w-full py-3 rounded-[16px] font-semibold text-sm bg-[#fef2f2] text-red-500 hover:bg-[#fee2e2] active:scale-[0.98] transition-all mb-2">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+            <button id="deleteAccountBtn" class="w-full py-3 rounded-[16px] font-semibold text-sm bg-white border border-[#f1f5f9] text-[#94a3b8] hover:border-red-200 hover:text-red-400 active:scale-[0.98] transition-all">
+              <i class="fas fa-trash-alt"></i> Delete Account
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Bottom Navigation -->
-    <div class="flex justify-around items-center py-3 sm:py-3.5 px-4 sm:px-6 pb-4 sm:pb-5 bg-white border-t border-[#f1f5f9]">
-      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#1e293b] cursor-pointer"><i class="fas fa-home text-base sm:text-xl"></i><span>Home</span></div>
-      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]"><i class="fas fa-chart-pie text-base sm:text-xl"></i><span>Stats</span></div>
-      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]"><i class="fas fa-receipt text-base sm:text-xl"></i><span>History</span></div>
-      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]"><i class="fas fa-user text-base sm:text-xl"></i><span>Profile</span></div>
+    <div class="flex justify-around items-center py-3 sm:py-3.5 px-4 sm:px-6 pb-4 sm:pb-5 bg-white border-t border-[#f1f5f9] mt-auto">
+      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#1e293b] cursor-pointer" data-tab="home"><i class="fas fa-home text-base sm:text-xl"></i><span>Home</span></div>
+      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]" data-tab="stats"><i class="fas fa-chart-pie text-base sm:text-xl"></i><span>Stats</span></div>
+      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]" data-tab="history"><i class="fas fa-receipt text-base sm:text-xl"></i><span>History</span></div>
+      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]" data-tab="profile"><i class="fas fa-user text-base sm:text-xl"></i><span>Profile</span></div>
     </div>
   </div>
 
@@ -140,7 +187,7 @@
       </div>
       
       <div class="mb-3 sm:mb-[18px]">
-        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1 sm:mb-1.5">Amount ($)</label>
+        <label id="amountLabel" class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1 sm:mb-1.5">Amount ($)</label>
         <input type="number" id="modalAmount" placeholder="0.00" step="0.01" min="0.01" class="w-full py-2.5 sm:py-3 px-3 sm:px-3.5 border border-[#e2e8f0] rounded-[16px] sm:rounded-[20px] text-sm sm:text-[0.95rem] bg-[#f8fafc] outline-none font-sans focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all">
         <div id="amountError" class="text-red-500 text-[10px] sm:text-xs mt-1 hidden">Please enter a valid amount</div>
       </div>
@@ -188,6 +235,179 @@
     let expenses = [];
     let incomeTotal = 0;
     let expenseToDelete = null;
+    let currentUser = null;
+    let userCurrency = 'USD';
+    let currencySymbol = '$';
+
+    // ============================================
+    // HELPERS
+    // ============================================
+    function getFirstName(fullName) {
+      if (!fullName) return 'there';
+      return fullName.split(' ')[0];
+    }
+
+    function getInitial(fullName) {
+      if (!fullName) return '?';
+      return fullName.charAt(0).toUpperCase();
+    }
+
+    function updateInitials(name) {
+      const initial = getInitial(name);
+      const headerEl = document.getElementById('headerInitial');
+      const profileEl = document.getElementById('profileInitial');
+      if (headerEl) headerEl.textContent = initial;
+      if (profileEl) profileEl.textContent = initial;
+    }
+
+    function updateGreeting(name) {
+      document.getElementById('greetingText').textContent = `Hey, ${getFirstName(name)} 👋`;
+    }
+
+    function setCurrencySymbol() {
+      const symbols = { 'USD': '$', 'PHP': '₱', 'EUR': '€', 'GBP': '£', 'INR': '₹' };
+      currencySymbol = symbols[userCurrency] || '$';
+    }
+
+    function formatMoney(amount) {
+      return currencySymbol + parseFloat(amount).toFixed(2);
+    }
+
+    function updateCurrencyLabels() {
+      document.getElementById('amountLabel').textContent = 'Amount (' + currencySymbol + ')';
+    }
+
+    // ============================================
+    // PROFILE FUNCTIONS
+    // ============================================
+    async function loadProfile() {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) return;
+      
+      currentUser = user;
+      document.getElementById('profileEmail').textContent = user.email;
+      
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile) {
+        const name = profile.full_name || user.email?.split('@')[0] || 'User';
+        document.getElementById('editName').value = profile.full_name || '';
+        document.getElementById('editCurrency').value = profile.currency || 'USD';
+        document.getElementById('editBudget').value = profile.monthly_budget || '';
+        document.getElementById('profileName').textContent = name;
+        
+        userCurrency = profile.currency || 'USD';
+        setCurrencySymbol();
+        updateCurrencyLabels();
+        updateUI();
+        updateGreeting(name);
+        updateInitials(name);
+      }
+    }
+
+    async function saveProfile() {
+      const btn = document.getElementById('saveProfileBtn');
+      const name = document.getElementById('editName').value.trim();
+      const currency = document.getElementById('editCurrency').value;
+      const budget = parseFloat(document.getElementById('editBudget').value) || null;
+      
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      
+      const { error } = await sb.from('profiles').upsert({
+        id: currentUser.id,
+        full_name: name,
+        currency: currency,
+        monthly_budget: budget,
+        updated_at: new Date()
+      });
+      
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+      
+      if (error) {
+        showToast('Failed to save profile', 'error');
+      } else {
+        userCurrency = currency;
+        setCurrencySymbol();
+        updateCurrencyLabels();
+        updateUI();
+        
+        document.getElementById('profileName').textContent = name || 'User';
+        updateGreeting(name);
+        updateInitials(name);
+        showToast('Profile saved! ✅', 'success');
+      }
+    }
+
+    async function handleLogout() {
+      await sb.auth.signOut();
+      window.location.href = 'login.html';
+    }
+
+    async function handleDeleteAccount() {
+      if (!confirm('Are you sure? This will delete ALL your data permanently.')) return;
+      
+      await sb.from('expenses').delete().eq('user_id', currentUser.id);
+      await sb.from('income').delete().eq('user_id', currentUser.id);
+      await sb.from('categories').delete().eq('user_id', currentUser.id);
+      await sb.from('profiles').delete().eq('id', currentUser.id);
+      
+      await sb.auth.signOut();
+      window.location.href = 'login.html';
+    }
+
+    // ============================================
+    // TAB NAVIGATION
+    // ============================================
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-item').forEach(n => {
+        n.classList.remove('text-[#1e293b]');
+        n.classList.add('text-[#94a3b8]');
+      });
+      
+      const activeNav = document.querySelector(`[data-tab="${tab}"]`);
+      if (activeNav) {
+        activeNav.classList.remove('text-[#94a3b8]');
+        activeNav.classList.add('text-[#1e293b]');
+      }
+      
+      const appHeader = document.getElementById('appHeader');
+      const balanceCard = document.getElementById('balanceCard');
+      const expenseList = document.getElementById('expenseListContainer');
+      const profilePanel = document.getElementById('profilePanel');
+      const quickAdd = document.getElementById('quickAddSection');
+      const addExpense = document.getElementById('addExpenseSection');
+      
+      appHeader.classList.add('hidden');
+      balanceCard.classList.add('hidden');
+      expenseList.classList.add('hidden');
+      profilePanel.classList.add('hidden');
+      quickAdd.classList.add('hidden');
+      addExpense.classList.add('hidden');
+      
+      if (tab === 'home' || tab === 'stats' || tab === 'history') {
+        appHeader.classList.remove('hidden');
+        balanceCard.classList.remove('hidden');
+        expenseList.classList.remove('hidden');
+        quickAdd.classList.remove('hidden');
+        addExpense.classList.remove('hidden');
+        if (tab !== 'home') showToast('Coming soon! 🚧', '');
+      } else if (tab === 'profile') {
+        profilePanel.classList.remove('hidden');
+        loadProfile();
+      }
+    }
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function() {
+        switchTab(this.getAttribute('data-tab'));
+      });
+    });
 
     // ============================================
     // SUPABASE DATA FUNCTIONS
@@ -259,19 +479,12 @@
         .insert([expenseData])
         .select();
 
-      if (error) {
-        console.error('Error adding expense:', error);
-        return null;
-      }
+      if (error) { console.error('Error adding expense:', error); return null; }
       return data[0];
     }
 
     async function deleteExpenseFromDB(id) {
-      const { error } = await sb
-        .from('expenses')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await sb.from('expenses').delete().eq('id', id);
       return !error;
     }
 
@@ -281,9 +494,9 @@
     function updateUI() {
       const totalExpense = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
       const balance = incomeTotal - totalExpense;
-      document.getElementById('balanceDisplay').textContent = `$${balance.toFixed(2)}`;
-      document.getElementById('incomeDisplay').textContent = `$${incomeTotal.toFixed(0)}`;
-      document.getElementById('expenseDisplay').textContent = `$${totalExpense.toFixed(2)}`;
+      document.getElementById('balanceDisplay').textContent = formatMoney(balance);
+      document.getElementById('incomeDisplay').textContent = formatMoney(incomeTotal);
+      document.getElementById('expenseDisplay').textContent = formatMoney(totalExpense);
       renderExpenseList();
     }
 
@@ -341,11 +554,7 @@
       const container = document.getElementById('expenseListContainer');
 
       if (expenses.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-8 text-[#94a3b8] text-sm">
-            <i class="fas fa-receipt text-3xl mb-2.5 block"></i>
-            No expenses yet. Add your first!
-          </div>`;
+        container.innerHTML = `<div class="text-center py-8 text-[#94a3b8] text-sm"><i class="fas fa-receipt text-3xl mb-2.5 block"></i>No expenses yet. Add your first!</div>`;
         return;
       }
 
@@ -363,32 +572,21 @@
         return `
           <div class="flex items-center justify-between py-3 px-2 border-b border-[#f1f5f9] rounded-xl hover:bg-[#fafaf9] transition-colors">
             <div class="flex items-center gap-3.5">
-              <div class="w-9 h-9 sm:w-[42px] sm:h-[42px] bg-[#f1f5f9] rounded-2xl flex items-center justify-center text-base sm:text-lg text-[#475569]">
-                <i class="fas ${icon}"></i>
-              </div>
+              <div class="w-9 h-9 sm:w-[42px] sm:h-[42px] bg-[#f1f5f9] rounded-2xl flex items-center justify-center text-base sm:text-lg text-[#475569]"><i class="fas ${icon}"></i></div>
               <div>
                 <h4 class="font-semibold text-sm sm:text-[0.95rem] text-[#1e1e2f] mb-1">${escapeHTML(name)}</h4>
-                <p class="text-[10px] sm:text-xs text-[#64748b] flex items-center gap-1">
-                  <i class="far fa-calendar-alt"></i> ${date} · ${escapeHTML(exp.description || '')}
-                </p>
+                <p class="text-[10px] sm:text-xs text-[#64748b] flex items-center gap-1"><i class="far fa-calendar-alt"></i> ${date} · ${escapeHTML(exp.description || '')}</p>
               </div>
             </div>
             <div class="flex items-center">
-              <span class="font-bold text-sm sm:text-base text-[#1e1e2f]">-$${parseFloat(exp.amount).toFixed(2)}</span>
-              <button class="delete-btn bg-transparent border-none text-[#cbd5e1] text-sm cursor-pointer py-1.5 px-1.5 ml-2 hover:text-red-500 transition-colors" data-id="${exp.id}">
-                <i class="fas fa-trash-alt"></i>
-              </button>
+              <span class="font-bold text-sm sm:text-base text-[#1e1e2f]">-${formatMoney(exp.amount)}</span>
+              <button class="delete-btn bg-transparent border-none text-[#cbd5e1] text-sm cursor-pointer py-1.5 px-1.5 ml-2 hover:text-red-500 transition-colors" data-id="${exp.id}"><i class="fas fa-trash-alt"></i></button>
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
 
       document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          expenseToDelete = btn.getAttribute('data-id');
-          openDeleteModal();
-        });
+        btn.addEventListener('click', (e) => { e.stopPropagation(); expenseToDelete = btn.getAttribute('data-id'); openDeleteModal(); });
       });
     }
 
@@ -423,39 +621,22 @@
       modal.querySelector('.modal-form').classList.add('translate-y-5');
     }
 
-    function openDeleteModal() {
-      document.getElementById('deleteModal').classList.remove('invisible', 'opacity-0');
-    }
-
-    function closeDeleteModal() {
-      document.getElementById('deleteModal').classList.add('invisible', 'opacity-0');
-      expenseToDelete = null;
-    }
+    function openDeleteModal() { document.getElementById('deleteModal').classList.remove('invisible', 'opacity-0'); }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.add('invisible', 'opacity-0'); expenseToDelete = null; }
 
     async function handleAddExpense() {
       const amountStr = document.getElementById('modalAmount').value.trim();
       const description = document.getElementById('modalDescription').value.trim();
       const errorEl = document.getElementById('amountError');
-
       errorEl.classList.add('hidden');
 
-      if (!amountStr) {
-        errorEl.textContent = 'Please enter an amount';
-        errorEl.classList.remove('hidden');
-        return;
-      }
-
+      if (!amountStr) { errorEl.textContent = 'Please enter an amount'; errorEl.classList.remove('hidden'); return; }
       const amount = parseFloat(amountStr);
-      if (isNaN(amount) || amount <= 0) {
-        errorEl.textContent = 'Enter a valid positive amount';
-        errorEl.classList.remove('hidden');
-        return;
-      }
+      if (isNaN(amount) || amount <= 0) { errorEl.textContent = 'Enter a valid positive amount'; errorEl.classList.remove('hidden'); return; }
 
       const category = categories.find(c => c.id === selectedCategoryId);
-
       const result = await addExpenseToDB({
-        user_id: 'demo-user',
+        user_id: currentUser?.id || 'demo-user',
         category_id: selectedCategoryId,
         amount: amount,
         description: description || (category?.name || '') + ' expense',
@@ -475,15 +656,9 @@
 
     async function handleDeleteExpense() {
       if (!expenseToDelete) return;
-
       const success = await deleteExpenseFromDB(expenseToDelete);
-      if (success) {
-        closeDeleteModal();
-        await fetchExpenses();
-        showToast('Expense deleted 🗑️', 'success');
-      } else {
-        showToast('Failed to delete', 'error');
-      }
+      if (success) { closeDeleteModal(); await fetchExpenses(); showToast('Expense deleted 🗑️', 'success'); }
+      else { showToast('Failed to delete', 'error'); }
     }
 
     // ============================================
@@ -496,43 +671,33 @@
     document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
     document.getElementById('confirmDeleteBtn').addEventListener('click', handleDeleteExpense);
     document.getElementById('clearSelection').addEventListener('click', () => {
-      if (categories.length > 0) {
-        selectedCategoryId = categories[0].id;
-        selectedCategoryName = categories[0].name;
-        highlightSelectedTag();
-      }
+      if (categories.length > 0) { selectedCategoryId = categories[0].id; selectedCategoryName = categories[0].name; highlightSelectedTag(); }
     });
-
-    document.getElementById('expenseModal').addEventListener('click', function(e) {
-      if (e.target === this) closeModal();
-    });
-    document.getElementById('deleteModal').addEventListener('click', function(e) {
-      if (e.target === this) closeDeleteModal();
-    });
-
-    document.getElementById('modalAmount').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); }
-    });
-    document.getElementById('modalDescription').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); }
-    });
-
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', function() {
-        document.querySelectorAll('.nav-item').forEach(n => {
-          n.classList.remove('text-[#1e293b]');
-          n.classList.add('text-[#94a3b8]');
-        });
-        this.classList.remove('text-[#94a3b8]');
-        this.classList.add('text-[#1e293b]');
-      });
-    });
+    document.getElementById('expenseModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+    document.getElementById('deleteModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
+    document.getElementById('modalAmount').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); } });
+    document.getElementById('modalDescription').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); } });
+    document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+    document.getElementById('deleteAccountBtn').addEventListener('click', handleDeleteAccount);
 
     // ============================================
     // INIT
     // ============================================
     async function init() {
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        const { data: profile } = await sb.from('profiles').select('currency, full_name').eq('id', user.id).single();
+        if (profile?.currency) { userCurrency = profile.currency; }
+        const name = profile?.full_name || user.email?.split('@')[0] || 'User';
+        updateGreeting(name);
+        updateInitials(name);
+        setCurrencySymbol();
+      }
+      
       await Promise.all([fetchCategories(), fetchIncome(), fetchExpenses()]);
+      updateCurrencyLabels();
+      
       if (categories.length > 0) {
         selectedCategoryId = categories[0].id;
         selectedCategoryName = categories[0].name;

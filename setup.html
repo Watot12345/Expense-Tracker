@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PennyFlow · Setup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+    
+    .setup-input {
+      transition: all 0.2s ease;
+    }
+    .setup-input:focus {
+      border-color: #1e293b;
+      box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.08);
+    }
+    
+    .step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    
+    @media (min-width: 768px) {
+      body {
+        background: linear-gradient(135deg, #e8e4df 0%, #f5f3f0 30%, #dfd9d2 70%, #f0ece8 100%);
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#f5f3f0] flex justify-center items-center min-h-screen p-4 sm:p-5 m-0">
+
+  <!-- Setup Container -->
+  <div class="w-full max-w-[420px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative p-6 sm:p-8">
+
+    <!-- Logo -->
+    <div class="text-center mb-6">
+      <div class="bg-[#1e293b] w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] flex items-center justify-center mx-auto mb-3 shadow-[0_8px_20px_rgba(15,23,42,0.2)]">
+        <i class="fas fa-coins text-xl sm:text-2xl text-white"></i>
+      </div>
+      <h1 class="font-bold text-xl sm:text-2xl text-[#1e1e2f]">Welcome to PennyFlow! 🎉</h1>
+      <p class="text-sm text-[#6b6b7b] mt-1">Let's get you set up in 3 quick steps</p>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="flex justify-center gap-2 mb-8">
+      <div id="stepDot1" class="step-dot bg-[#1e293b]"></div>
+      <div id="stepDot2" class="step-dot bg-[#e2e8f0]"></div>
+      <div id="stepDot3" class="step-dot bg-[#e2e8f0]"></div>
+    </div>
+
+    <!-- STEP 1: Name -->
+    <div id="step1">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="bg-[#1e293b] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">1</span>
+        <h3 class="font-semibold text-lg text-[#1e1e2f]">What's your name?</h3>
+      </div>
+      <p class="text-sm text-[#64748b] mb-5 ml-8">We'll use this to personalize your experience</p>
+      
+      <div class="ml-8 mb-6">
+        <div class="relative">
+          <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+          <input type="text" id="setupName" placeholder="Alex Johnson" class="setup-input w-full py-3 pl-11 pr-4 border border-[#e2e8f0] rounded-[16px] text-[0.95rem] bg-[#f8fafc] outline-none font-sans" autofocus>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Starting Balance -->
+    <div id="step2" class="hidden">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="bg-[#1e293b] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">2</span>
+        <h3 class="font-semibold text-lg text-[#1e1e2f]">What's your starting balance?</h3>
+      </div>
+      <p class="text-sm text-[#64748b] mb-5 ml-8">How much money do you have right now?</p>
+      
+      <div class="ml-8 mb-6">
+        <div class="relative">
+          <i class="fas fa-dollar-sign absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+          <input type="number" id="setupBalance" placeholder="0.00" step="0.01" min="0" class="setup-input w-full py-3 pl-11 pr-4 border border-[#e2e8f0] rounded-[16px] text-[0.95rem] bg-[#f8fafc] outline-none font-sans">
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Currency -->
+    <div id="step3" class="hidden">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="bg-[#1e293b] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">3</span>
+        <h3 class="font-semibold text-lg text-[#1e1e2f]">Choose your currency</h3>
+      </div>
+      <p class="text-sm text-[#64748b] mb-5 ml-8">You can change this later</p>
+      
+      <div class="ml-8 mb-6">
+        <div class="relative">
+          <i class="fas fa-coins absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"></i>
+          <select id="setupCurrency" class="setup-input w-full py-3 pl-11 pr-4 border border-[#e2e8f0] rounded-[16px] text-[0.95rem] bg-[#f8fafc] outline-none font-sans appearance-none">
+            <option value="USD">🇺🇸 USD - US Dollar</option>
+            <option value="PHP">🇵🇭 PHP - Philippine Peso</option>
+            <option value="EUR">🇪🇺 EUR - Euro</option>
+            <option value="GBP">🇬🇧 GBP - British Pound</option>
+            <option value="INR">🇮🇳 INR - Indian Rupee</option>
+            <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
+          </select>
+          <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none text-xs"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="setupError" class="text-red-500 text-xs mb-4 hidden text-center"></div>
+
+    <!-- Buttons -->
+    <div class="flex gap-3 justify-between mt-4">
+      <button id="backBtn" class="py-3 px-5 rounded-[30px] font-semibold text-sm bg-[#f1f5f9] text-[#1e293b] hover:-translate-y-px active:scale-[0.97] transition-all hidden">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <button id="nextBtn" class="py-3 px-6 rounded-[30px] font-semibold text-sm bg-[#1e293b] text-white shadow-[0_6px_14px_rgba(15,23,42,0.2)] hover:bg-[#0f172a] hover:-translate-y-px active:scale-[0.97] transition-all flex items-center gap-2 ml-auto">
+        Next <i class="fas fa-arrow-right"></i>
+      </button>
+      <button id="finishBtn" class="py-3 px-6 rounded-[30px] font-semibold text-sm bg-[#10b981] text-white shadow-[0_6px_14px_rgba(16,185,129,0.3)] hover:bg-[#059669] hover:-translate-y-px active:scale-[0.97] transition-all flex items-center gap-2 ml-auto hidden">
+        <i class="fas fa-check"></i> Finish Setup
+      </button>
+    </div>
+
+    <!-- Skip -->
+    <p class="text-center text-xs text-[#94a3b8] mt-5">
+      <span id="skipSetup" class="text-[#d96c4a] cursor-pointer hover:opacity-70 transition-opacity">Skip for now</span>
+    </p>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#1e293b] text-white py-3 px-6 rounded-[30px] text-sm font-semibold z-[2000] opacity-0 transition-all duration-300 shadow-[0_10px_25px_rgba(0,0,0,0.2)]"></div>
+
+  <style>
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+    .toast.success { background: #10b981; }
+  </style>
+
+  <script>
+    // ============================================
+    // SUPABASE CONFIG
+    // ============================================
+    const SUPABASE_URL = 'https://islpjlryvtakwjmcaecd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzbHBqbHJ5dnRha3dqbWNhZWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjExODEsImV4cCI6MjA5NzQzNzE4MX0.jfdzy6qxZDX6CYjx2_jFk7CvsmqSDrMqGBPTms4Lqr0';
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============================================
+    // STATE
+    // ============================================
+    let currentStep = 1;
+    let userId = null;
+
+    // ============================================
+    // CHECK AUTH
+    // ============================================
+    async function checkAuth() {
+      const { data: { user } } = await sb.auth.getUser();
+      
+      if (!user) {
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      userId = user.id;
+      
+      // Check if already set up
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single();
+      
+      if (profile?.full_name) {
+        // Already set up → go to main app
+        window.location.href = 'index.html';
+      }
+    }
+
+    // ============================================
+    // STEP NAVIGATION
+    // ============================================
+    function showStep(step) {
+      document.getElementById('step1').classList.add('hidden');
+      document.getElementById('step2').classList.add('hidden');
+      document.getElementById('step3').classList.add('hidden');
+      document.getElementById('step' + step).classList.remove('hidden');
+      
+      // Update dots
+      document.getElementById('stepDot1').className = step >= 1 ? 'step-dot bg-[#1e293b]' : 'step-dot bg-[#e2e8f0]';
+      document.getElementById('stepDot2').className = step >= 2 ? 'step-dot bg-[#1e293b]' : 'step-dot bg-[#e2e8f0]';
+      document.getElementById('stepDot3').className = step >= 3 ? 'step-dot bg-[#1e293b]' : 'step-dot bg-[#e2e8f0]';
+      
+      // Update buttons
+      document.getElementById('backBtn').classList.toggle('hidden', step === 1);
+      document.getElementById('nextBtn').classList.toggle('hidden', step === 3);
+      document.getElementById('finishBtn').classList.toggle('hidden', step !== 3);
+      
+      // Focus input
+      if (step === 1) document.getElementById('setupName').focus();
+      if (step === 2) document.getElementById('setupBalance').focus();
+      if (step === 3) document.getElementById('setupCurrency').focus();
+      
+      currentStep = step;
+    }
+
+    function nextStep() {
+      const errorEl = document.getElementById('setupError');
+      errorEl.classList.add('hidden');
+      
+      if (currentStep === 1) {
+        const name = document.getElementById('setupName').value.trim();
+        if (!name) {
+          errorEl.textContent = 'Please enter your name';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+      }
+      
+      if (currentStep === 2) {
+        const balance = document.getElementById('setupBalance').value;
+        if (balance === '' || parseFloat(balance) < 0) {
+          errorEl.textContent = 'Please enter a valid balance (0 or more)';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+      }
+      
+      showStep(currentStep + 1);
+    }
+
+    function prevStep() {
+      document.getElementById('setupError').classList.add('hidden');
+      showStep(currentStep - 1);
+    }
+
+    // ============================================
+    // FINISH SETUP
+    // ============================================
+    async function finishSetup() {
+      const name = document.getElementById('setupName').value.trim();
+      const balanceStr = document.getElementById('setupBalance').value;
+      const currency = document.getElementById('setupCurrency').value;
+      const errorEl = document.getElementById('setupError');
+      const btn = document.getElementById('finishBtn');
+      
+      errorEl.classList.add('hidden');
+      
+      if (!name) {
+        errorEl.textContent = 'Please go back and enter your name';
+        errorEl.classList.remove('hidden');
+        showStep(1);
+        return;
+      }
+      
+      const balance = parseFloat(balanceStr) || 0;
+      
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      
+      try {
+        // Save profile
+        await sb.from('profiles').upsert({
+          id: userId,
+          full_name: name,
+          currency: currency
+        });
+        
+        // Add initial income if balance > 0
+        if (balance > 0) {
+          await sb.from('income').insert({
+            user_id: userId,
+            source: 'Starting balance',
+            amount: balance,
+            is_recurring: false,
+            frequency: 'one-time'
+          });
+        }
+        
+        // Add default categories
+        const defaultCategories = [
+          { user_id: userId, name: 'Food', icon: 'fa-utensils', color: '#f59e0b' },
+          { user_id: userId, name: 'Transport', icon: 'fa-bus', color: '#3b82f6' },
+          { user_id: userId, name: 'Books', icon: 'fa-book', color: '#8b5cf6' },
+          { user_id: userId, name: 'Coffee', icon: 'fa-mug-hot', color: '#92400e' },
+          { user_id: userId, name: 'Fun', icon: 'fa-gamepad', color: '#ec4899' }
+        ];
+        await sb.from('categories').insert(defaultCategories);
+        
+        // Success!
+        showToast('All set! Redirecting... 🚀', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 800);
+        
+      } catch (error) {
+        console.error('Setup error:', error);
+        errorEl.textContent = 'Something went wrong. Please try again.';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Finish Setup';
+      }
+    }
+
+    function skipSetup() {
+      window.location.href = 'index.html';
+    }
+
+    // ============================================
+    // TOAST
+    // ============================================
+    function showToast(message, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast ' + type + ' show';
+      setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    document.getElementById('nextBtn').addEventListener('click', nextStep);
+    document.getElementById('backBtn').addEventListener('click', prevStep);
+    document.getElementById('finishBtn').addEventListener('click', finishSetup);
+    document.getElementById('skipSetup').addEventListener('click', skipSetup);
+
+    // Enter key to advance
+    document.getElementById('setupName').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') nextStep();
+    });
+    document.getElementById('setupBalance').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') nextStep();
+    });
+    document.getElementById('setupCurrency').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') finishSetup();
+    });
+
+    // ============================================
+    // INIT
+    // ============================================
+    checkAuth();
+    showStep(1);
+  </script>
+</body>
+</html>
