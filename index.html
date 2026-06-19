@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PennyFlow · expense tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px; }
+    .modal-transition { transition: visibility 0.2s, opacity 0.2s ease; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+    
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    
+    /* Desktop background pattern */
+    @media (min-width: 768px) {
+      body {
+        background: linear-gradient(135deg, #f5f3f0 0%, #e8e4df 50%, #f0ece8 100%);
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#f5f3f0] flex justify-center items-center min-h-screen p-0 sm:p-5 m-0">
+
+  <div id="toast" class="toast"></div>
+
+  <!-- App Container - Fully Responsive -->
+  <div class="w-full sm:max-w-[440px] bg-white sm:rounded-[40px] shadow-none sm:shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative flex flex-col h-screen sm:h-[750px] sm:max-h-[850px]">
+
+    <!-- Header -->
+    <div class="px-5 sm:px-6 pt-5 sm:pt-7 pb-3 sm:pb-4 flex justify-between items-center">
+      <div>
+        <h2 class="font-bold text-xl sm:text-2xl text-[#1e1e2f] tracking-[-0.3px]">Hey, Alex 👋</h2>
+        <p class="text-xs sm:text-sm text-[#6b6b7b] font-medium mt-1">Keep your spending smart</p>
+      </div>
+      <div class="bg-[#fef1ea] w-10 h-10 sm:w-12 sm:h-12 rounded-[24px] sm:rounded-[28px] flex items-center justify-center text-lg sm:text-2xl text-[#d96c4a] border-2 border-[#ffe3d6]">
+        <i class="fas fa-user-graduate"></i>
+      </div>
+    </div>
+
+    <!-- Balance Card -->
+    <div id="balanceCard" class="bg-gradient-to-br from-[#1e293b] to-[#0f172a] mx-4 sm:mx-5 mb-4 sm:mb-6 rounded-[24px] sm:rounded-[28px] p-[18px_16px] sm:p-[22px_20px] text-white shadow-[0_12px_22px_rgba(15,23,42,0.2)] hover:-translate-y-1 hover:shadow-[0_18px_28px_rgba(15,23,42,0.25)] transition-all cursor-pointer">
+      <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium uppercase tracking-[0.5px] text-[#94a3b8] mb-1.5">
+        <i class="fas fa-wallet"></i> current balance
+      </div>
+      <div id="balanceDisplay" class="text-[2rem] sm:text-[2.5rem] font-bold tracking-[-0.5px]">$0.00</div>
+      <div class="flex justify-between mt-[14px] sm:mt-[18px] text-xs sm:text-sm">
+        <div class="flex items-center gap-1.5">
+          <i class="fas fa-arrow-down text-green-400 text-xs sm:text-sm"></i>
+          <span id="incomeDisplay">$0</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i class="fas fa-arrow-up text-red-400 text-xs sm:text-sm"></i>
+          <span id="expenseDisplay">$0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Category Tags -->
+    <div class="mx-4 sm:mx-5 mb-4 sm:mb-6">
+      <div class="flex justify-between items-center mb-3 sm:mb-3.5">
+        <h3 class="font-semibold text-base sm:text-lg text-[#1e1e2f]">⚡ Quick add</h3>
+        <span id="clearSelection" class="text-[10px] sm:text-xs text-[#d96c4a] font-semibold cursor-pointer hover:opacity-70">clear</span>
+      </div>
+      <div id="categoryTags" class="flex gap-2 sm:gap-2.5 flex-wrap"></div>
+    </div>
+
+    <!-- Add Expense Trigger -->
+    <div class="mx-4 sm:mx-5 mb-4 sm:mb-5 flex gap-2 sm:gap-2.5 items-center">
+      <div id="openModalTrigger" class="flex-1 bg-[#f8fafc] rounded-[24px] sm:rounded-[30px] py-1 sm:py-1.5 pl-[14px] sm:pl-[18px] pr-1 sm:pr-1.5 flex items-center border border-[#e2e8f0] focus-within:border-[#1e293b] focus-within:shadow-[0_0_0_2px_rgba(30,41,59,0.1)] cursor-pointer">
+        <i class="fas fa-plus-circle text-[#94a3b8] text-xs sm:text-sm"></i>
+        <input type="text" placeholder="Add expense..." readonly id="modalPlaceholder" class="border-none bg-transparent py-2 sm:py-2.5 px-1.5 sm:px-2 text-sm sm:text-[0.95rem] w-full outline-none font-medium text-[#0f172a] placeholder:text-[#94a3b8] cursor-pointer">
+      </div>
+      <button id="openModalBtn" class="bg-[#1e293b] border-none w-10 h-10 sm:w-12 sm:h-12 rounded-[24px] sm:rounded-[30px] text-white text-base sm:text-xl flex items-center justify-center cursor-pointer shadow-[0_8px_16px_rgba(15,23,42,0.15)] hover:bg-[#0f172a] hover:scale-[1.03] active:scale-95 transition-all">
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+
+    <!-- Transaction History -->
+    <div id="expenseListContainer" class="flex-1 mx-4 sm:mx-5 mb-4 sm:mb-5 overflow-y-auto pr-1 custom-scrollbar">
+      <div class="text-center py-8 text-[#94a3b8] text-sm">
+        <i class="fas fa-spinner fa-spin text-2xl mb-2.5 block"></i>
+        Loading...
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="flex justify-around items-center py-3 sm:py-3.5 px-4 sm:px-6 pb-4 sm:pb-5 bg-white border-t border-[#f1f5f9]">
+      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#1e293b] cursor-pointer"><i class="fas fa-home text-base sm:text-xl"></i><span>Home</span></div>
+      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]"><i class="fas fa-chart-pie text-base sm:text-xl"></i><span>Stats</span></div>
+      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]"><i class="fas fa-receipt text-base sm:text-xl"></i><span>History</span></div>
+      <div class="nav-item flex flex-col items-center gap-0.5 sm:gap-1 text-[0.6rem] sm:text-[0.7rem] font-semibold text-[#94a3b8] cursor-pointer hover:text-[#0f172a]"><i class="fas fa-user text-base sm:text-xl"></i><span>Profile</span></div>
+    </div>
+  </div>
+
+  <!-- Add Expense Modal -->
+  <div id="expenseModal" class="modal-overlay fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] invisible opacity-0 modal-transition p-4">
+    <div class="modal-form bg-white rounded-[32px] p-5 sm:p-7 pb-5 sm:pb-6 w-[95%] max-w-[340px] shadow-[0_30px_45px_rgba(0,0,0,0.15)] translate-y-5 transition-transform duration-200">
+      <h3 class="font-bold text-lg sm:text-xl text-[#1e1e2f] mb-4 sm:mb-5 flex items-center gap-2"><i class="fas fa-receipt"></i> New expense</h3>
+      
+      <div class="mb-3 sm:mb-[18px]">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1 sm:mb-1.5">Category</label>
+        <select id="modalCategory" class="w-full py-2.5 sm:py-3 px-3 sm:px-3.5 border border-[#e2e8f0] rounded-[16px] sm:rounded-[20px] text-sm sm:text-[0.95rem] bg-[#f8fafc] outline-none font-sans focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all"></select>
+      </div>
+      
+      <div class="mb-3 sm:mb-[18px]">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1 sm:mb-1.5">Amount ($)</label>
+        <input type="number" id="modalAmount" placeholder="0.00" step="0.01" min="0.01" class="w-full py-2.5 sm:py-3 px-3 sm:px-3.5 border border-[#e2e8f0] rounded-[16px] sm:rounded-[20px] text-sm sm:text-[0.95rem] bg-[#f8fafc] outline-none font-sans focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all">
+        <div id="amountError" class="text-red-500 text-[10px] sm:text-xs mt-1 hidden">Please enter a valid amount</div>
+      </div>
+      
+      <div class="mb-3 sm:mb-[18px]">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1 sm:mb-1.5">Description (optional)</label>
+        <input type="text" id="modalDescription" placeholder="e.g., Lunch, bus ticket" class="w-full py-2.5 sm:py-3 px-3 sm:px-3.5 border border-[#e2e8f0] rounded-[16px] sm:rounded-[20px] text-sm sm:text-[0.95rem] bg-[#f8fafc] outline-none font-sans focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all">
+      </div>
+      
+      <div class="flex gap-2 sm:gap-3 mt-4 sm:mt-6 justify-end">
+        <button id="cancelModalBtn" class="py-2.5 sm:py-3 px-4 sm:px-5 rounded-[24px] sm:rounded-[30px] font-semibold text-xs sm:text-sm bg-[#f1f5f9] text-[#1e293b] hover:-translate-y-px active:scale-[0.97] transition-all">Cancel</button>
+        <button id="saveExpenseBtn" class="py-2.5 sm:py-3 px-4 sm:px-5 rounded-[24px] sm:rounded-[30px] font-semibold text-xs sm:text-sm bg-[#1e293b] text-white shadow-[0_6px_14px_rgba(15,23,42,0.2)] hover:bg-[#0f172a] hover:-translate-y-px active:scale-[0.97] transition-all">Add Expense</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal-overlay fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] invisible opacity-0 modal-transition p-4">
+    <div class="bg-white rounded-[32px] p-5 sm:p-7 w-[90%] max-w-[300px] text-center shadow-[0_30px_45px_rgba(0,0,0,0.15)]">
+      <i class="fas fa-exclamation-triangle text-3xl sm:text-4xl text-red-400 mb-2 sm:mb-3"></i>
+      <h3 class="font-bold text-base sm:text-lg text-[#1e1e2f] mb-1 sm:mb-2">Delete expense?</h3>
+      <p class="text-xs sm:text-sm text-[#64748b] mb-4 sm:mb-6">This cannot be undone.</p>
+      <div class="flex gap-2 sm:gap-3 justify-center">
+        <button id="cancelDeleteBtn" class="py-2.5 sm:py-3 px-4 sm:px-6 rounded-[24px] sm:rounded-[30px] font-semibold text-xs sm:text-sm bg-[#f1f5f9] text-[#1e293b] hover:-translate-y-px active:scale-95 transition-all">Cancel</button>
+        <button id="confirmDeleteBtn" class="py-2.5 sm:py-3 px-4 sm:px-6 rounded-[24px] sm:rounded-[30px] font-semibold text-xs sm:text-sm bg-red-500 text-white hover:bg-red-600 hover:-translate-y-px active:scale-95 transition-all">Delete</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+    // ============================================
+    // SUPABASE CONFIG
+    // ============================================
+    const SUPABASE_URL = 'https://islpjlryvtakwjmcaecd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzbHBqbHJ5dnRha3dqbWNhZWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjExODEsImV4cCI6MjA5NzQzNzE4MX0.jfdzy6qxZDX6CYjx2_jFk7CvsmqSDrMqGBPTms4Lqr0';
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============================================
+    // APP STATE
+    // ============================================
+    let selectedCategoryId = null;
+    let selectedCategoryName = 'Food';
+    let categories = [];
+    let expenses = [];
+    let incomeTotal = 0;
+    let expenseToDelete = null;
+
+    // ============================================
+    // SUPABASE DATA FUNCTIONS
+    // ============================================
+    async function fetchCategories() {
+      const { data, error } = await sb
+        .from('categories')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+        useFallbackCategories();
+      } else {
+        categories = data;
+      }
+      renderCategoryTags();
+      renderModalCategories();
+      if (categories.length > 0 && !selectedCategoryId) {
+        selectedCategoryId = categories[0].id;
+        selectedCategoryName = categories[0].name;
+        highlightSelectedTag();
+      }
+    }
+
+    function useFallbackCategories() {
+      categories = [
+        { id: 'temp-1', name: 'Food', icon: 'fa-utensils' },
+        { id: 'temp-2', name: 'Transport', icon: 'fa-bus' },
+        { id: 'temp-3', name: 'Books', icon: 'fa-book' },
+        { id: 'temp-4', name: 'Coffee', icon: 'fa-mug-hot' },
+        { id: 'temp-5', name: 'Fun', icon: 'fa-gamepad' }
+      ];
+    }
+
+    async function fetchExpenses() {
+      const { data, error } = await sb
+        .from('expenses')
+        .select('*, categories(name, icon, color)')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching expenses:', error);
+        expenses = [];
+      } else {
+        expenses = data;
+      }
+      updateUI();
+    }
+
+    async function fetchIncome() {
+      const { data, error } = await sb
+        .from('income')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching income:', error);
+        incomeTotal = 2100;
+      } else {
+        incomeTotal = data.reduce((sum, inc) => sum + parseFloat(inc.amount), 0) || 2100;
+      }
+      updateUI();
+    }
+
+    async function addExpenseToDB(expenseData) {
+      const { data, error } = await sb
+        .from('expenses')
+        .insert([expenseData])
+        .select();
+
+      if (error) {
+        console.error('Error adding expense:', error);
+        return null;
+      }
+      return data[0];
+    }
+
+    async function deleteExpenseFromDB(id) {
+      const { error } = await sb
+        .from('expenses')
+        .delete()
+        .eq('id', id);
+
+      return !error;
+    }
+
+    // ============================================
+    // UI FUNCTIONS
+    // ============================================
+    function updateUI() {
+      const totalExpense = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+      const balance = incomeTotal - totalExpense;
+      document.getElementById('balanceDisplay').textContent = `$${balance.toFixed(2)}`;
+      document.getElementById('incomeDisplay').textContent = `$${incomeTotal.toFixed(0)}`;
+      document.getElementById('expenseDisplay').textContent = `$${totalExpense.toFixed(2)}`;
+      renderExpenseList();
+    }
+
+    function renderCategoryTags() {
+      const iconMap = {
+        'Food': 'fa-utensils', 'Transport': 'fa-bus', 'Books': 'fa-book',
+        'Coffee': 'fa-mug-hot', 'Fun': 'fa-gamepad', 'Shopping': 'fa-shopping-bag',
+        'Bills': 'fa-file-invoice', 'Health': 'fa-heart'
+      };
+
+      document.getElementById('categoryTags').innerHTML = categories.map(cat => `
+        <div data-category-id="${cat.id}" data-category-name="${cat.name}" 
+             class="tag bg-[#f8fafc] rounded-[30px] py-2 sm:py-2.5 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-[#334155] flex items-center gap-1.5 cursor-pointer transition-all duration-200 border border-transparent hover:bg-white hover:border-[#d9d9e6] hover:scale-[1.02]">
+          <i class="fas ${iconMap[cat.name] || 'fa-receipt'} text-xs sm:text-sm text-[#64748b]"></i> ${cat.name}
+        </div>
+      `).join('');
+
+      document.querySelectorAll('#categoryTags .tag').forEach(tag => {
+        tag.addEventListener('click', function() {
+          selectedCategoryId = this.getAttribute('data-category-id');
+          selectedCategoryName = this.getAttribute('data-category-name');
+          highlightSelectedTag();
+          this.style.transform = 'scale(0.94)';
+          setTimeout(() => { this.style.transform = ''; }, 120);
+        });
+      });
+
+      highlightSelectedTag();
+    }
+
+    function renderModalCategories() {
+      document.getElementById('modalCategory').innerHTML = categories.map(cat =>
+        `<option value="${cat.id}">${cat.name}</option>`
+      ).join('');
+    }
+
+    function highlightSelectedTag() {
+      document.querySelectorAll('#categoryTags .tag').forEach(tag => {
+        const isSelected = tag.getAttribute('data-category-id') === selectedCategoryId;
+        if (isSelected) {
+          tag.classList.add('bg-[#1e293b]', 'text-white', 'border-[#1e293b]');
+          tag.classList.remove('bg-[#f8fafc]', 'text-[#334155]', 'border-transparent');
+          tag.querySelector('i').classList.add('text-yellow-400');
+          tag.querySelector('i').classList.remove('text-[#64748b]');
+        } else {
+          tag.classList.remove('bg-[#1e293b]', 'text-white', 'border-[#1e293b]');
+          tag.classList.add('bg-[#f8fafc]', 'text-[#334155]', 'border-transparent');
+          tag.querySelector('i').classList.remove('text-yellow-400');
+          tag.querySelector('i').classList.add('text-[#64748b]');
+        }
+      });
+    }
+
+    function renderExpenseList() {
+      const container = document.getElementById('expenseListContainer');
+
+      if (expenses.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-[#94a3b8] text-sm">
+            <i class="fas fa-receipt text-3xl mb-2.5 block"></i>
+            No expenses yet. Add your first!
+          </div>`;
+        return;
+      }
+
+      const iconMap = {
+        'Food': 'fa-utensils', 'Transport': 'fa-bus', 'Books': 'fa-book',
+        'Coffee': 'fa-mug-hot', 'Fun': 'fa-gamepad', 'Shopping': 'fa-shopping-bag',
+        'Bills': 'fa-file-invoice', 'Health': 'fa-heart'
+      };
+
+      container.innerHTML = expenses.map(exp => {
+        const name = exp.categories?.name || 'Other';
+        const icon = iconMap[name] || 'fa-receipt';
+        const date = new Date(exp.expense_date || exp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        return `
+          <div class="flex items-center justify-between py-3 px-2 border-b border-[#f1f5f9] rounded-xl hover:bg-[#fafaf9] transition-colors">
+            <div class="flex items-center gap-3.5">
+              <div class="w-9 h-9 sm:w-[42px] sm:h-[42px] bg-[#f1f5f9] rounded-2xl flex items-center justify-center text-base sm:text-lg text-[#475569]">
+                <i class="fas ${icon}"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-sm sm:text-[0.95rem] text-[#1e1e2f] mb-1">${escapeHTML(name)}</h4>
+                <p class="text-[10px] sm:text-xs text-[#64748b] flex items-center gap-1">
+                  <i class="far fa-calendar-alt"></i> ${date} · ${escapeHTML(exp.description || '')}
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <span class="font-bold text-sm sm:text-base text-[#1e1e2f]">-$${parseFloat(exp.amount).toFixed(2)}</span>
+              <button class="delete-btn bg-transparent border-none text-[#cbd5e1] text-sm cursor-pointer py-1.5 px-1.5 ml-2 hover:text-red-500 transition-colors" data-id="${exp.id}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          expenseToDelete = btn.getAttribute('data-id');
+          openDeleteModal();
+        });
+      });
+    }
+
+    function escapeHTML(str) {
+      return String(str).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m] || m));
+    }
+
+    function showToast(message, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast ' + type + ' show';
+      setTimeout(() => { toast.classList.remove('show'); }, 2500);
+    }
+
+    // ============================================
+    // MODAL FUNCTIONS
+    // ============================================
+    function openModal() {
+      document.getElementById('modalCategory').value = selectedCategoryId || (categories[0]?.id || '');
+      document.getElementById('modalAmount').value = '';
+      document.getElementById('modalDescription').value = '';
+      document.getElementById('amountError').classList.add('hidden');
+      const modal = document.getElementById('expenseModal');
+      modal.classList.remove('invisible', 'opacity-0');
+      modal.querySelector('.modal-form').classList.remove('translate-y-5');
+      setTimeout(() => document.getElementById('modalAmount').focus(), 100);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('expenseModal');
+      modal.classList.add('invisible', 'opacity-0');
+      modal.querySelector('.modal-form').classList.add('translate-y-5');
+    }
+
+    function openDeleteModal() {
+      document.getElementById('deleteModal').classList.remove('invisible', 'opacity-0');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('invisible', 'opacity-0');
+      expenseToDelete = null;
+    }
+
+    async function handleAddExpense() {
+      const amountStr = document.getElementById('modalAmount').value.trim();
+      const description = document.getElementById('modalDescription').value.trim();
+      const errorEl = document.getElementById('amountError');
+
+      errorEl.classList.add('hidden');
+
+      if (!amountStr) {
+        errorEl.textContent = 'Please enter an amount';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      const amount = parseFloat(amountStr);
+      if (isNaN(amount) || amount <= 0) {
+        errorEl.textContent = 'Enter a valid positive amount';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      const category = categories.find(c => c.id === selectedCategoryId);
+
+      const result = await addExpenseToDB({
+        user_id: 'demo-user',
+        category_id: selectedCategoryId,
+        amount: amount,
+        description: description || (category?.name || '') + ' expense',
+        expense_date: new Date().toISOString().split('T')[0]
+      });
+
+      if (result) {
+        closeModal();
+        await fetchExpenses();
+        showToast('Expense added! 💸', 'success');
+        document.getElementById('balanceCard').style.transform = 'scale(0.98)';
+        setTimeout(() => { document.getElementById('balanceCard').style.transform = ''; }, 150);
+      } else {
+        showToast('Failed to add expense', 'error');
+      }
+    }
+
+    async function handleDeleteExpense() {
+      if (!expenseToDelete) return;
+
+      const success = await deleteExpenseFromDB(expenseToDelete);
+      if (success) {
+        closeDeleteModal();
+        await fetchExpenses();
+        showToast('Expense deleted 🗑️', 'success');
+      } else {
+        showToast('Failed to delete', 'error');
+      }
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    document.getElementById('openModalBtn').addEventListener('click', openModal);
+    document.getElementById('openModalTrigger').addEventListener('click', openModal);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+    document.getElementById('saveExpenseBtn').addEventListener('click', handleAddExpense);
+    document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
+    document.getElementById('confirmDeleteBtn').addEventListener('click', handleDeleteExpense);
+    document.getElementById('clearSelection').addEventListener('click', () => {
+      if (categories.length > 0) {
+        selectedCategoryId = categories[0].id;
+        selectedCategoryName = categories[0].name;
+        highlightSelectedTag();
+      }
+    });
+
+    document.getElementById('expenseModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+      if (e.target === this) closeDeleteModal();
+    });
+
+    document.getElementById('modalAmount').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); }
+    });
+    document.getElementById('modalDescription').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); }
+    });
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.nav-item').forEach(n => {
+          n.classList.remove('text-[#1e293b]');
+          n.classList.add('text-[#94a3b8]');
+        });
+        this.classList.remove('text-[#94a3b8]');
+        this.classList.add('text-[#1e293b]');
+      });
+    });
+
+    // ============================================
+    // INIT
+    // ============================================
+    async function init() {
+      await Promise.all([fetchCategories(), fetchIncome(), fetchExpenses()]);
+      if (categories.length > 0) {
+        selectedCategoryId = categories[0].id;
+        selectedCategoryName = categories[0].name;
+        highlightSelectedTag();
+      }
+    }
+
+    init();
+</script>
+</body>
+</html>

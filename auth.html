@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PennyFlow · Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    input[type="email"]::-webkit-input-placeholder,
+    input[type="password"]::-webkit-input-placeholder,
+    input[type="text"]::-webkit-input-placeholder {
+      color: #94a3b8;
+    }
+    
+    .auth-input {
+      transition: all 0.2s ease;
+    }
+    .auth-input:focus {
+      border-color: #1e293b;
+      box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.08);
+    }
+    
+    @media (min-width: 768px) {
+      body {
+        background: linear-gradient(135deg, #e8e4df 0%, #f5f3f0 30%, #dfd9d2 70%, #f0ece8 100%);
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#f5f3f0] flex justify-center items-center min-h-screen p-4 sm:p-5 m-0">
+
+  <!-- Auth Container -->
+  <div class="w-full max-w-[400px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative p-6 sm:p-8">
+
+    <!-- Logo/Branding -->
+    <div class="text-center mb-8">
+      <div class="bg-[#1e293b] w-16 h-16 sm:w-20 sm:h-20 rounded-[24px] flex items-center justify-center mx-auto mb-4 shadow-[0_8px_20px_rgba(15,23,42,0.2)]">
+        <i class="fas fa-coins text-2xl sm:text-3xl text-white"></i>
+      </div>
+      <h1 class="font-bold text-2xl sm:text-3xl text-[#1e1e2f] tracking-[-0.5px]">PennyFlow</h1>
+      <p class="text-sm text-[#6b6b7b] font-medium mt-1">Smart spending, simple life</p>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <h2 class="font-bold text-xl text-[#1e1e2f] mb-6">Welcome back 👋</h2>
+      
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-[#475569] mb-1.5 tracking-[0.3px]">Email</label>
+        <div class="relative">
+          <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm"></i>
+          <input type="email" id="loginEmail" placeholder="you@example.com" class="auth-input w-full py-3 pl-11 pr-4 border border-[#e2e8f0] rounded-[16px] text-[0.95rem] bg-[#f8fafc] outline-none font-sans">
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-[#475569] mb-1.5 tracking-[0.3px]">Password</label>
+        <div class="relative">
+          <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm"></i>
+          <input type="password" id="loginPassword" placeholder="••••••••" class="auth-input w-full py-3 pl-11 pr-12 border border-[#e2e8f0] rounded-[16px] text-[0.95rem] bg-[#f8fafc] outline-none font-sans">
+          <button type="button" onclick="togglePassword('loginPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569] transition-colors">
+            <i class="fas fa-eye text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="loginError" class="text-red-500 text-xs mb-4 hidden"></div>
+
+      <button id="loginBtn" class="w-full py-3.5 rounded-[16px] font-semibold text-sm bg-[#1e293b] text-white shadow-[0_6px_14px_rgba(15,23,42,0.2)] hover:bg-[#0f172a] active:scale-[0.98] transition-all mb-4 flex items-center justify-center gap-2">
+        <i class="fas fa-sign-in-alt"></i> Sign In
+      </button>
+
+      <p class="text-center text-sm text-[#64748b]">
+        Don't have an account? 
+        <span onclick="showRegister()" class="text-[#d96c4a] font-semibold cursor-pointer hover:opacity-70 transition-opacity">Sign up</span>
+      </p>
+    </div>
+
+    <!-- Register Form (hidden by default) -->
+    <div id="registerForm" class="hidden">
+      <h2 class="font-bold text-xl text-[#1e1e2f] mb-6">Create account ✨</h2>
+      
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-[#475569] mb-1.5 tracking-[0.3px]">Full Name</label>
+        <div class="relative">
+          <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm"></i>
+          <input type="text" id="registerName" placeholder="Alex Johnson" class="auth-input w-full py-3 pl-11 pr-4 border border-[#e2e8f0] rounded-[16px] text-[0.95rem] bg-[#f8fafc] outline-none font-sans">
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-[#475569] mb-1.5 tracking-[0.3px]">Email</label>
+        <div class="relative">
+          <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm"></i>
+          <input type="email" id="registerEmail" placeholder="you@example.com" class="auth-input w-full py-3 pl-11 pr-4 border border-[#e2e8f0] rounded-[16px] text-[0.95rem] bg-[#f8fafc] outline-none font-sans">
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-[#475569] mb-1.5 tracking-[0.3px]">Password</label>
+        <div class="relative">
+          <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] text-sm"></i>
+          <input type="password" id="registerPassword" placeholder="Min. 6 characters" class="auth-input w-full py-3 pl-11 pr-12 border border-[#e2e8f0] rounded-[16px] text-[0.95rem] bg-[#f8fafc] outline-none font-sans">
+          <button type="button" onclick="togglePassword('registerPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569] transition-colors">
+            <i class="fas fa-eye text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="registerError" class="text-red-500 text-xs mb-4 hidden"></div>
+
+      <button id="registerBtn" class="w-full py-3.5 rounded-[16px] font-semibold text-sm bg-[#1e293b] text-white shadow-[0_6px_14px_rgba(15,23,42,0.2)] hover:bg-[#0f172a] active:scale-[0.98] transition-all mb-4 flex items-center justify-center gap-2">
+        <i class="fas fa-user-plus"></i> Create Account
+      </button>
+
+      <p class="text-center text-sm text-[#64748b]">
+        Already have an account? 
+        <span onclick="showLogin()" class="text-[#d96c4a] font-semibold cursor-pointer hover:opacity-70 transition-opacity">Sign in</span>
+      </p>
+    </div>
+
+    <!-- Divider -->
+    <div class="flex items-center gap-3 my-6">
+      <div class="flex-1 h-px bg-[#e2e8f0]"></div>
+      <span class="text-xs text-[#94a3b8] font-medium">or continue with</span>
+      <div class="flex-1 h-px bg-[#e2e8f0]"></div>
+    </div>
+
+    <!-- Social Login -->
+    <button id="googleLoginBtn" class="w-full py-3 rounded-[16px] font-semibold text-sm bg-white border border-[#e2e8f0] text-[#334155] hover:bg-[#f8fafc] hover:border-[#cbd5e1] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+      <i class="fab fa-google text-red-400"></i> Continue with Google
+    </button>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#1e293b] text-white py-3 px-6 rounded-[30px] text-sm font-semibold z-[2000] opacity-0 transition-all duration-300 shadow-[0_10px_25px_rgba(0,0,0,0.2)]"></div>
+
+  <style>
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+  </style>
+
+  <script>
+    // ============================================
+    // SUPABASE CONFIG
+    // ============================================
+    const SUPABASE_URL = 'https://islpjlryvtakwjmcaecd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzbHBqbHJ5dnRha3dqbWNhZWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjExODEsImV4cCI6MjA5NzQzNzE4MX0.jfdzy6qxZDX6CYjx2_jFk7CvsmqSDrMqGBPTms4Lqr0';
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============================================
+    // CHECK IF ALREADY LOGGED IN
+    // ============================================
+    async function checkSession() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        window.location.href = 'index.html'; // Redirect to main app
+      }
+    }
+    checkSession();
+
+    // ============================================
+    // TOGGLE FORMS
+    // ============================================
+    function showRegister() {
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('registerForm').classList.remove('hidden');
+      document.getElementById('loginError').classList.add('hidden');
+      document.getElementById('registerError').classList.add('hidden');
+    }
+
+    function showLogin() {
+      document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('loginForm').classList.remove('hidden');
+      document.getElementById('loginError').classList.add('hidden');
+      document.getElementById('registerError').classList.add('hidden');
+    }
+
+    // ============================================
+    // TOGGLE PASSWORD VISIBILITY
+    // ============================================
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+
+    // ============================================
+    // TOAST NOTIFICATION
+    // ============================================
+    function showToast(message, type = '') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast ' + type + ' show';
+      setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    // ============================================
+    // LOGIN
+    // ============================================
+    async function handleLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const errorEl = document.getElementById('loginError');
+      const btn = document.getElementById('loginBtn');
+
+      errorEl.classList.add('hidden');
+
+      if (!email || !password) {
+        errorEl.textContent = 'Please fill in all fields';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+
+      if (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+      } else {
+        showToast('Welcome back! 🎉', 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 500);
+      }
+    }
+
+    // ============================================
+    // REGISTER
+    // ============================================
+    async function handleRegister() {
+      const name = document.getElementById('registerName').value.trim();
+      const email = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+      const errorEl = document.getElementById('registerError');
+      const btn = document.getElementById('registerBtn');
+
+      errorEl.classList.add('hidden');
+
+      if (!name || !email || !password) {
+        errorEl.textContent = 'Please fill in all fields';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      if (password.length < 6) {
+        errorEl.textContent = 'Password must be at least 6 characters';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+
+      const { data, error } = await sb.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name }
+        }
+      });
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+
+      if (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+      } else {
+        showToast('Account created! Check your email 📧', 'success');
+        setTimeout(() => showLogin(), 1500);
+      }
+    }
+
+    // ============================================
+    // GOOGLE LOGIN
+    // ============================================
+    async function handleGoogleLogin() {
+      const { data, error } = await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/index.html'
+        }
+      });
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    document.getElementById('loginBtn').addEventListener('click', handleLogin);
+    document.getElementById('registerBtn').addEventListener('click', handleRegister);
+    document.getElementById('googleLoginBtn').addEventListener('click', handleGoogleLogin);
+
+    // Enter key to submit
+    document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('registerPassword').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleRegister();
+    });
+  </script>
+</body>
+</html>
