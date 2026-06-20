@@ -90,7 +90,7 @@
       </p>
     </div>
 
-    <!-- Register Form (hidden by default) -->
+    <!-- Register Form -->
     <div id="registerForm" class="hidden">
       <h2 class="font-bold text-xl text-[#1e1e2f] mb-6">Create account ✨</h2>
       
@@ -146,14 +146,9 @@
     </button>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#1e293b] text-white py-3 px-6 rounded-[30px] text-sm font-semibold z-[2000] opacity-0 transition-all duration-300 shadow-[0_10px_25px_rgba(0,0,0,0.2)]"></div>
-
-  <style>
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
-    .toast.success { background: #10b981; }
-    .toast.error { background: #ef4444; }
-  </style>
+  <!-- ✅ Scripts -->
+  <script src="loader.js"></script>
+  <script src="alerts.js"></script>
 
   <script>
     // ============================================
@@ -170,7 +165,7 @@
     async function checkSession() {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
-        window.location.href = 'index.html'; // Redirect to main app
+        window.location.href = 'index.html';
       }
     }
     checkSession();
@@ -210,17 +205,7 @@
     }
 
     // ============================================
-    // TOAST NOTIFICATION
-    // ============================================
-    function showToast(message, type = '') {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.className = 'toast ' + type + ' show';
-      setTimeout(() => { toast.classList.remove('show'); }, 3000);
-    }
-
-    // ============================================
-    // LOGIN
+    // ✅ LOGIN with loader
     // ============================================
     async function handleLogin() {
       const email = document.getElementById('loginEmail').value.trim();
@@ -238,6 +223,9 @@
 
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+      
+      // ✅ Show loader
+      loader.loggingIn();
 
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
@@ -245,18 +233,19 @@
       btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
 
       if (error) {
+        loader.hide();
         errorEl.textContent = error.message;
         errorEl.classList.remove('hidden');
       } else {
-        showToast('Welcome back! 🎉', 'success');
+        alert.loginSuccess();
         setTimeout(() => {
           window.location.href = 'index.html';
-        }, 500);
+        }, 800);
       }
     }
 
     // ============================================
-    // REGISTER
+    // ✅ REGISTER with loader
     // ============================================
     async function handleRegister() {
       const name = document.getElementById('registerName').value.trim();
@@ -281,6 +270,9 @@
 
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+      
+      // ✅ Show loader
+      loader.creatingAccount();
 
       const { data, error } = await sb.auth.signUp({
         email,
@@ -292,13 +284,15 @@
 
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+      
+      loader.hide();
 
       if (error) {
         errorEl.textContent = error.message;
         errorEl.classList.remove('hidden');
       } else {
-        showToast('Account created! Check your email 📧', 'success');
-        setTimeout(() => showLogin(), 1500);
+        alert.registerSuccess();
+        setTimeout(() => showLogin(), 2000);
       }
     }
 
@@ -306,6 +300,7 @@
     // GOOGLE LOGIN
     // ============================================
     async function handleGoogleLogin() {
+      loader.loggingIn();
       const { data, error } = await sb.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -321,7 +316,6 @@
     document.getElementById('registerBtn').addEventListener('click', handleRegister);
     document.getElementById('googleLoginBtn').addEventListener('click', handleGoogleLogin);
 
-    // Enter key to submit
     document.getElementById('loginPassword').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') handleLogin();
     });

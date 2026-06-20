@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -28,25 +29,30 @@
     input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     input[type="number"] { -moz-appearance: textfield; }
     
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1e293b;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      z-index: 2000;
-      opacity: 0;
-      transition: opacity 0.3s, transform 0.3s;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #1e293b;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
-    .toast.success { background: #10b981; }
-    .toast.error { background: #ef4444; }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 640px) {
+      .tag { padding: 12px 16px !important; font-size: 0.9rem !important; }
+      .nav-item { font-size: 0.7rem !important; }
+      input, select, button { font-size: 16px !important; }
+    }
+
+    .app-container {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
     
     @media (min-width: 768px) {
       body {
@@ -57,10 +63,8 @@
 </head>
 <body class="bg-[#f5f3f0] flex justify-center items-center min-h-screen p-0 sm:p-5 m-0">
 
-  <div id="toast" class="toast"></div>
-
   <!-- App Container -->
-  <div class="w-full sm:max-w-[440px] bg-white sm:rounded-[40px] shadow-none sm:shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative flex flex-col h-screen sm:h-[750px] sm:max-h-[850px]">
+  <div class="app-container w-full sm:max-w-[900px] bg-white sm:rounded-[40px] shadow-none sm:shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative flex flex-col h-screen sm:h-[92vh] sm:max-h-[800px] mx-auto">
 
     <!-- Header -->
     <div id="appHeader" class="px-5 sm:px-6 pt-5 sm:pt-7 pb-3 sm:pb-4 flex justify-between items-center">
@@ -68,9 +72,9 @@
         <h2 id="greetingText" class="font-bold text-xl sm:text-2xl text-[#1e1e2f] tracking-[-0.3px]">Hey, there 👋</h2>
         <p class="text-xs sm:text-sm text-[#6b6b7b] font-medium mt-1">Keep your spending smart</p>
       </div>
-     <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center overflow-hidden ">
-  <img src="2.png" alt="Profile" class="w-full h-full object-cover">
-</div>
+      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center overflow-hidden border-2 border-[#ffe3d6]">
+        <img src="2.png" alt="Profile" class="w-full h-full object-cover">
+      </div>
     </div>
 
     <!-- Balance Card -->
@@ -91,11 +95,18 @@
       </div>
     </div>
 
+    <!-- ✅ Add Income Button -->
+    <div class="mx-4 sm:mx-5 mb-2 flex justify-end">
+      <button id="addIncomeBtn" class="text-[10px] sm:text-xs text-[#d96c4a] font-semibold cursor-pointer hover:opacity-70 flex items-center gap-1">
+        <i class="fas fa-plus-circle"></i> Add Income
+      </button>
+    </div>
+
     <!-- Quick Category Tags -->
     <div class="mx-4 sm:mx-5 mb-4 sm:mb-6" id="quickAddSection">
       <div class="flex justify-between items-center mb-3 sm:mb-3.5">
         <h3 class="font-semibold text-base sm:text-lg text-[#1e1e2f]">⚡ Quick add</h3>
-        <span id="clearSelection" class="text-[10px] sm:text-xs text-[#d96c4a] font-semibold cursor-pointer hover:opacity-70">clear</span>
+        <span id="clearSelection" class="text-[10px] sm:text-xs text-[#d96c4a] font-semibold cursor-pointer hover:opacity-70"></span>
       </div>
       <div id="categoryTags" class="flex gap-2 sm:gap-2.5 flex-wrap"></div>
     </div>
@@ -114,6 +125,66 @@
     <!-- Main Content Area -->
     <div id="mainContent" class="flex-1 mx-4 sm:mx-5 overflow-y-auto pr-1 custom-scrollbar">
       
+      <!-- Stats Panel -->
+<div id="statsPanel" class="hidden">
+  <div class="space-y-4 pb-4">
+    
+    <!-- Budget Progress -->
+    <div class="bg-[#f8fafc] rounded-[20px] p-4">
+      <h3 class="font-semibold text-sm text-[#1e1e2f] mb-3">💰 Monthly Budget</h3>
+      <div class="flex justify-between items-center mb-2">
+        <span id="statsBudgetLabel" class="text-xs text-[#64748b]">Spent</span>
+        <span id="statsBudgetText" class="text-xs font-semibold text-[#1e1e2f]">$0 / $0</span>
+      </div>
+      <div class="w-full bg-[#e2e8f0] rounded-full h-3">
+        <div id="statsBudgetBar" class="bg-[#10b981] h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+      </div>
+      <p id="statsBudgetWarning" class="text-[10px] text-red-500 mt-2 hidden"></p>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="bg-[#f8fafc] rounded-[20px] p-4">
+      <h3 class="font-semibold text-sm text-[#1e1e2f] mb-3">🍩 Spending by Category</h3>
+      <div class="w-full max-w-[250px] mx-auto">
+        <canvas id="categoryChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Weekly Trend -->
+    <div class="bg-[#f8fafc] rounded-[20px] p-4">
+      <h3 class="font-semibold text-sm text-[#1e1e2f] mb-3">📈 Weekly Spending</h3>
+      <canvas id="weeklyChart" height="150"></canvas>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 gap-3">
+      <div class="bg-[#f8fafc] rounded-[20px] p-4 text-center">
+        <p class="text-[10px] text-[#64748b] mb-1">Total Transactions</p>
+        <p id="totalTransactions" class="text-xl font-bold text-[#1e1e2f]">0</p>
+      </div>
+      <div class="bg-[#f8fafc] rounded-[20px] p-4 text-center">
+        <p class="text-[10px] text-[#64748b] mb-1">Avg. Daily Spend</p>
+        <p id="avgDailySpend" class="text-xl font-bold text-[#1e1e2f]">$0</p>
+      </div>
+      <div class="bg-[#f8fafc] rounded-[20px] p-4 text-center">
+        <p class="text-[10px] text-[#64748b] mb-1">Top Category</p>
+        <p id="topCategory" class="text-lg font-bold text-[#1e1e2f]">-</p>
+      </div>
+      <div class="bg-[#f8fafc] rounded-[20px] p-4 text-center">
+        <p class="text-[10px] text-[#64748b] mb-1">This Month</p>
+        <p id="thisMonthTotal" class="text-xl font-bold text-[#1e1e2f]">$0</p>
+      </div>
+    </div>
+
+    <!-- Insights -->
+    <div id="insightsSection" class="bg-[#fef3c7] rounded-[20px] p-4">
+      <h3 class="font-semibold text-sm text-[#1e1e2f] mb-2">💡 Smart Insights</h3>
+      <ul id="insightsList" class="text-xs text-[#64748b] space-y-1"></ul>
+    </div>
+
+  </div>
+</div>
+
       <!-- Transaction History -->
       <div id="expenseListContainer">
         <div class="text-center py-8 text-[#94a3b8] text-sm">
@@ -204,6 +275,57 @@
     </div>
   </div>
 
+  <!-- ✅ Edit Expense Modal -->
+  <div id="editModal" class="modal-overlay fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] invisible opacity-0 modal-transition p-4">
+    <div class="modal-form bg-white rounded-[32px] p-5 sm:p-7 pb-5 sm:pb-6 w-[95%] max-w-[340px] shadow-[0_30px_45px_rgba(0,0,0,0.15)] translate-y-5 transition-transform duration-200">
+      <h3 class="font-bold text-lg sm:text-xl text-[#1e1e2f] mb-4 sm:mb-5 flex items-center gap-2"><i class="fas fa-edit"></i> Edit expense</h3>
+      <div class="mb-3 sm:mb-[18px]">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1 sm:mb-1.5">Category</label>
+        <select id="editCategory" class="w-full py-2.5 sm:py-3 px-3 sm:px-3.5 border border-[#e2e8f0] rounded-[16px] sm:rounded-[20px] text-sm sm:text-[0.95rem] bg-[#f8fafc] outline-none font-sans focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all"></select>
+      </div>
+      <div class="mb-3 sm:mb-[18px]">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1 sm:mb-1.5">Amount ($)</label>
+        <input type="number" id="editAmount" placeholder="0.00" step="0.01" min="0.01" class="w-full py-2.5 sm:py-3 px-3 sm:px-3.5 border border-[#e2e8f0] rounded-[16px] sm:rounded-[20px] text-sm sm:text-[0.95rem] bg-[#f8fafc] outline-none font-sans focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all">
+        <div id="editAmountError" class="text-red-500 text-[10px] sm:text-xs mt-1 hidden">Please enter a valid amount</div>
+      </div>
+      <div class="mb-3 sm:mb-[18px]">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1 sm:mb-1.5">Description (optional)</label>
+        <input type="text" id="editDescription" placeholder="e.g., Lunch, bus ticket" class="w-full py-2.5 sm:py-3 px-3 sm:px-3.5 border border-[#e2e8f0] rounded-[16px] sm:rounded-[20px] text-sm sm:text-[0.95rem] bg-[#f8fafc] outline-none font-sans focus:border-[#1e293b] focus:shadow-[0_0_0_3px_rgba(30,41,59,0.08)] transition-all">
+      </div>
+      <div class="flex gap-2 sm:gap-3 mt-4 sm:mt-6 justify-end">
+        <button id="cancelEditBtn" class="py-2.5 sm:py-3 px-4 sm:px-5 rounded-[24px] sm:rounded-[30px] font-semibold text-xs sm:text-sm bg-[#f1f5f9] text-[#1e293b] hover:-translate-y-px active:scale-[0.97] transition-all">Cancel</button>
+        <button id="saveEditBtn" class="py-2.5 sm:py-3 px-4 sm:px-5 rounded-[24px] sm:rounded-[30px] font-semibold text-xs sm:text-sm bg-[#1e293b] text-white shadow-[0_6px_14px_rgba(15,23,42,0.2)] hover:bg-[#0f172a] hover:-translate-y-px active:scale-[0.97] transition-all">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Income Modal -->
+  <div id="incomeModal" class="modal-overlay fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] invisible opacity-0 modal-transition p-4">
+    <div class="bg-white rounded-[32px] p-5 sm:p-7 w-[95%] max-w-[340px] shadow-[0_30px_45px_rgba(0,0,0,0.15)]">
+      <h3 class="font-bold text-lg sm:text-xl text-[#1e1e2f] mb-4"><i class="fas fa-coins"></i> Add Income</h3>
+      <div class="mb-3">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1.5">Source</label>
+        <input type="text" id="incomeSource" placeholder="e.g., Part-time job" class="w-full py-2.5 px-3.5 border border-[#e2e8f0] rounded-[16px] text-sm bg-[#f8fafc] outline-none">
+      </div>
+      <div class="mb-3">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1.5">Amount ($)</label>
+        <input type="number" id="incomeAmount" placeholder="0.00" step="0.01" min="0.01" class="w-full py-2.5 px-3.5 border border-[#e2e8f0] rounded-[16px] text-sm bg-[#f8fafc] outline-none">
+      </div>
+      <div class="mb-4">
+        <label class="block text-[10px] sm:text-xs font-semibold text-[#475569] mb-1.5">Frequency</label>
+        <select id="incomeFrequency" class="w-full py-2.5 px-3.5 border border-[#e2e8f0] rounded-[16px] text-sm bg-[#f8fafc] outline-none">
+          <option value="one-time">One-time</option>
+          <option value="monthly">Monthly</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
+      <div class="flex gap-2 justify-end">
+        <button id="cancelIncomeBtn" class="py-2.5 px-4 rounded-[24px] font-semibold text-xs bg-[#f1f5f9] text-[#1e293b]">Cancel</button>
+        <button id="saveIncomeBtn" class="py-2.5 px-4 rounded-[24px] font-semibold text-xs bg-[#1e293b] text-white">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete Confirmation Modal -->
   <div id="deleteModal" class="modal-overlay fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] invisible opacity-0 modal-transition p-4">
     <div class="bg-white rounded-[32px] p-5 sm:p-7 w-[90%] max-w-[300px] text-center shadow-[0_30px_45px_rgba(0,0,0,0.15)]">
@@ -216,496 +338,23 @@
       </div>
     </div>
   </div>
+<!-- Offline Banner -->
+<div id="offlineBanner" class="hidden bg-red-500 text-white text-center text-xs py-2 px-4">
+  ⚠️ You're offline. Changes will sync when connected.
+</div>
 
 <script>
-    // ============================================
-    // SUPABASE CONFIG
-    // ============================================
-    const SUPABASE_URL = 'https://islpjlryvtakwjmcaecd.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzbHBqbHJ5dnRha3dqbWNhZWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjExODEsImV4cCI6MjA5NzQzNzE4MX0.jfdzy6qxZDX6CYjx2_jFk7CvsmqSDrMqGBPTms4Lqr0';
+window.addEventListener('online', () => {
+  document.getElementById('offlineBanner').classList.add('hidden');
+  alert.success('Back online! 🔗');
+});
 
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // ============================================
-    // APP STATE
-    // ============================================
-    let selectedCategoryId = null;
-    let selectedCategoryName = 'Food';
-    let categories = [];
-    let expenses = [];
-    let incomeTotal = 0;
-    let expenseToDelete = null;
-    let currentUser = null;
-    let userCurrency = 'USD';
-    let currencySymbol = '$';
-
-    // ============================================
-    // HELPERS
-    // ============================================
-    function getFirstName(fullName) {
-      if (!fullName) return 'there';
-      return fullName.split(' ')[0];
-    }
-
-    function getInitial(fullName) {
-      if (!fullName) return '?';
-      return fullName.charAt(0).toUpperCase();
-    }
-
-    function updateInitials(name) {
-      const initial = getInitial(name);
-      const headerEl = document.getElementById('headerInitial');
-      const profileEl = document.getElementById('profileInitial');
-      if (headerEl) headerEl.textContent = initial;
-      if (profileEl) profileEl.textContent = initial;
-    }
-
-    function updateGreeting(name) {
-      document.getElementById('greetingText').textContent = `Hey, ${getFirstName(name)} 👋`;
-    }
-
-    function setCurrencySymbol() {
-      const symbols = { 'USD': '$', 'PHP': '₱', 'EUR': '€', 'GBP': '£', 'INR': '₹' };
-      currencySymbol = symbols[userCurrency] || '$';
-    }
-
-    function formatMoney(amount) {
-      return currencySymbol + parseFloat(amount).toFixed(2);
-    }
-
-    function updateCurrencyLabels() {
-      document.getElementById('amountLabel').textContent = 'Amount (' + currencySymbol + ')';
-    }
-
-    // ============================================
-    // PROFILE FUNCTIONS
-    // ============================================
-    async function loadProfile() {
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) return;
-      
-      currentUser = user;
-      document.getElementById('profileEmail').textContent = user.email;
-      
-      const { data: profile } = await sb
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (profile) {
-        const name = profile.full_name || user.email?.split('@')[0] || 'User';
-        document.getElementById('editName').value = profile.full_name || '';
-        document.getElementById('editCurrency').value = profile.currency || 'USD';
-        document.getElementById('editBudget').value = profile.monthly_budget || '';
-        document.getElementById('profileName').textContent = name;
-        
-        userCurrency = profile.currency || 'USD';
-        setCurrencySymbol();
-        updateCurrencyLabels();
-        updateUI();
-        updateGreeting(name);
-        updateInitials(name);
-      }
-    }
-
-    async function saveProfile() {
-      const btn = document.getElementById('saveProfileBtn');
-      const name = document.getElementById('editName').value.trim();
-      const currency = document.getElementById('editCurrency').value;
-      const budget = parseFloat(document.getElementById('editBudget').value) || null;
-      
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-      
-      const { error } = await sb.from('profiles').upsert({
-        id: currentUser.id,
-        full_name: name,
-        currency: currency,
-        monthly_budget: budget,
-        updated_at: new Date()
-      });
-      
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-      
-      if (error) {
-        showToast('Failed to save profile', 'error');
-      } else {
-        userCurrency = currency;
-        setCurrencySymbol();
-        updateCurrencyLabels();
-        updateUI();
-        
-        document.getElementById('profileName').textContent = name || 'User';
-        updateGreeting(name);
-        updateInitials(name);
-        showToast('Profile saved! ✅', 'success');
-      }
-    }
-
-    async function handleLogout() {
-      await sb.auth.signOut();
-      window.location.href = 'login.html';
-    }
-
-    async function handleDeleteAccount() {
-      if (!confirm('Are you sure? This will delete ALL your data permanently.')) return;
-      
-      await sb.from('expenses').delete().eq('user_id', currentUser.id);
-      await sb.from('income').delete().eq('user_id', currentUser.id);
-      await sb.from('categories').delete().eq('user_id', currentUser.id);
-      await sb.from('profiles').delete().eq('id', currentUser.id);
-      
-      await sb.auth.signOut();
-      window.location.href = 'login.html';
-    }
-
-    // ============================================
-    // TAB NAVIGATION
-    // ============================================
-    function switchTab(tab) {
-      document.querySelectorAll('.nav-item').forEach(n => {
-        n.classList.remove('text-[#1e293b]');
-        n.classList.add('text-[#94a3b8]');
-      });
-      
-      const activeNav = document.querySelector(`[data-tab="${tab}"]`);
-      if (activeNav) {
-        activeNav.classList.remove('text-[#94a3b8]');
-        activeNav.classList.add('text-[#1e293b]');
-      }
-      
-      const appHeader = document.getElementById('appHeader');
-      const balanceCard = document.getElementById('balanceCard');
-      const expenseList = document.getElementById('expenseListContainer');
-      const profilePanel = document.getElementById('profilePanel');
-      const quickAdd = document.getElementById('quickAddSection');
-      const addExpense = document.getElementById('addExpenseSection');
-      
-      appHeader.classList.add('hidden');
-      balanceCard.classList.add('hidden');
-      expenseList.classList.add('hidden');
-      profilePanel.classList.add('hidden');
-      quickAdd.classList.add('hidden');
-      addExpense.classList.add('hidden');
-      
-      if (tab === 'home' || tab === 'stats' || tab === 'history') {
-        appHeader.classList.remove('hidden');
-        balanceCard.classList.remove('hidden');
-        expenseList.classList.remove('hidden');
-        quickAdd.classList.remove('hidden');
-        addExpense.classList.remove('hidden');
-        if (tab !== 'home') showToast('Coming soon! 🚧', '');
-      } else if (tab === 'profile') {
-        profilePanel.classList.remove('hidden');
-        loadProfile();
-      }
-    }
-
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', function() {
-        switchTab(this.getAttribute('data-tab'));
-      });
-    });
-
-    // ============================================
-    // SUPABASE DATA FUNCTIONS
-    // ============================================
-    async function fetchCategories() {
-      const { data, error } = await sb
-        .from('categories')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching categories:', error);
-        useFallbackCategories();
-      } else {
-        categories = data;
-      }
-      renderCategoryTags();
-      renderModalCategories();
-      if (categories.length > 0 && !selectedCategoryId) {
-        selectedCategoryId = categories[0].id;
-        selectedCategoryName = categories[0].name;
-        highlightSelectedTag();
-      }
-    }
-
-    function useFallbackCategories() {
-      categories = [
-        { id: 'temp-1', name: 'Food', icon: 'fa-utensils' },
-        { id: 'temp-2', name: 'Transport', icon: 'fa-bus' },
-        { id: 'temp-3', name: 'Books', icon: 'fa-book' },
-        { id: 'temp-4', name: 'Coffee', icon: 'fa-mug-hot' },
-        { id: 'temp-5', name: 'Fun', icon: 'fa-gamepad' }
-      ];
-    }
-
-    async function fetchExpenses() {
-      const { data, error } = await sb
-        .from('expenses')
-        .select('*, categories(name, icon, color)')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.error('Error fetching expenses:', error);
-        expenses = [];
-      } else {
-        expenses = data;
-      }
-      updateUI();
-    }
-
-    async function fetchIncome() {
-      const { data, error } = await sb
-        .from('income')
-        .select('*');
-
-      if (error) {
-        console.error('Error fetching income:', error);
-        incomeTotal = 2100;
-      } else {
-        incomeTotal = data.reduce((sum, inc) => sum + parseFloat(inc.amount), 0) || 2100;
-      }
-      updateUI();
-    }
-
-    async function addExpenseToDB(expenseData) {
-      const { data, error } = await sb
-        .from('expenses')
-        .insert([expenseData])
-        .select();
-
-      if (error) { console.error('Error adding expense:', error); return null; }
-      return data[0];
-    }
-
-    async function deleteExpenseFromDB(id) {
-      const { error } = await sb.from('expenses').delete().eq('id', id);
-      return !error;
-    }
-
-    // ============================================
-    // UI FUNCTIONS
-    // ============================================
-    function updateUI() {
-      const totalExpense = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
-      const balance = incomeTotal - totalExpense;
-      document.getElementById('balanceDisplay').textContent = formatMoney(balance);
-      document.getElementById('incomeDisplay').textContent = formatMoney(incomeTotal);
-      document.getElementById('expenseDisplay').textContent = formatMoney(totalExpense);
-      renderExpenseList();
-    }
-
-    function renderCategoryTags() {
-      const iconMap = {
-        'Food': 'fa-utensils', 'Transport': 'fa-bus', 'Books': 'fa-book',
-        'Coffee': 'fa-mug-hot', 'Fun': 'fa-gamepad', 'Shopping': 'fa-shopping-bag',
-        'Bills': 'fa-file-invoice', 'Health': 'fa-heart'
-      };
-
-      document.getElementById('categoryTags').innerHTML = categories.map(cat => `
-        <div data-category-id="${cat.id}" data-category-name="${cat.name}" 
-             class="tag bg-[#f8fafc] rounded-[30px] py-2 sm:py-2.5 px-3 sm:px-4 text-xs sm:text-sm font-semibold text-[#334155] flex items-center gap-1.5 cursor-pointer transition-all duration-200 border border-transparent hover:bg-white hover:border-[#d9d9e6] hover:scale-[1.02]">
-          <i class="fas ${iconMap[cat.name] || 'fa-receipt'} text-xs sm:text-sm text-[#64748b]"></i> ${cat.name}
-        </div>
-      `).join('');
-
-      document.querySelectorAll('#categoryTags .tag').forEach(tag => {
-        tag.addEventListener('click', function() {
-          selectedCategoryId = this.getAttribute('data-category-id');
-          selectedCategoryName = this.getAttribute('data-category-name');
-          highlightSelectedTag();
-          this.style.transform = 'scale(0.94)';
-          setTimeout(() => { this.style.transform = ''; }, 120);
-        });
-      });
-
-      highlightSelectedTag();
-    }
-
-    function renderModalCategories() {
-      document.getElementById('modalCategory').innerHTML = categories.map(cat =>
-        `<option value="${cat.id}">${cat.name}</option>`
-      ).join('');
-    }
-
-    function highlightSelectedTag() {
-      document.querySelectorAll('#categoryTags .tag').forEach(tag => {
-        const isSelected = tag.getAttribute('data-category-id') === selectedCategoryId;
-        if (isSelected) {
-          tag.classList.add('bg-[#1e293b]', 'text-white', 'border-[#1e293b]');
-          tag.classList.remove('bg-[#f8fafc]', 'text-[#334155]', 'border-transparent');
-          tag.querySelector('i').classList.add('text-yellow-400');
-          tag.querySelector('i').classList.remove('text-[#64748b]');
-        } else {
-          tag.classList.remove('bg-[#1e293b]', 'text-white', 'border-[#1e293b]');
-          tag.classList.add('bg-[#f8fafc]', 'text-[#334155]', 'border-transparent');
-          tag.querySelector('i').classList.remove('text-yellow-400');
-          tag.querySelector('i').classList.add('text-[#64748b]');
-        }
-      });
-    }
-
-    function renderExpenseList() {
-      const container = document.getElementById('expenseListContainer');
-
-      if (expenses.length === 0) {
-        container.innerHTML = `<div class="text-center py-8 text-[#94a3b8] text-sm"><i class="fas fa-receipt text-3xl mb-2.5 block"></i>No expenses yet. Add your first!</div>`;
-        return;
-      }
-
-      const iconMap = {
-        'Food': 'fa-utensils', 'Transport': 'fa-bus', 'Books': 'fa-book',
-        'Coffee': 'fa-mug-hot', 'Fun': 'fa-gamepad', 'Shopping': 'fa-shopping-bag',
-        'Bills': 'fa-file-invoice', 'Health': 'fa-heart'
-      };
-
-      container.innerHTML = expenses.map(exp => {
-        const name = exp.categories?.name || 'Other';
-        const icon = iconMap[name] || 'fa-receipt';
-        const date = new Date(exp.expense_date || exp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-        return `
-          <div class="flex items-center justify-between py-3 px-2 border-b border-[#f1f5f9] rounded-xl hover:bg-[#fafaf9] transition-colors">
-            <div class="flex items-center gap-3.5">
-              <div class="w-9 h-9 sm:w-[42px] sm:h-[42px] bg-[#f1f5f9] rounded-2xl flex items-center justify-center text-base sm:text-lg text-[#475569]"><i class="fas ${icon}"></i></div>
-              <div>
-                <h4 class="font-semibold text-sm sm:text-[0.95rem] text-[#1e1e2f] mb-1">${escapeHTML(name)}</h4>
-                <p class="text-[10px] sm:text-xs text-[#64748b] flex items-center gap-1"><i class="far fa-calendar-alt"></i> ${date} · ${escapeHTML(exp.description || '')}</p>
-              </div>
-            </div>
-            <div class="flex items-center">
-              <span class="font-bold text-sm sm:text-base text-[#1e1e2f]">-${formatMoney(exp.amount)}</span>
-              <button class="delete-btn bg-transparent border-none text-[#cbd5e1] text-sm cursor-pointer py-1.5 px-1.5 ml-2 hover:text-red-500 transition-colors" data-id="${exp.id}"><i class="fas fa-trash-alt"></i></button>
-            </div>
-          </div>`;
-      }).join('');
-
-      document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => { e.stopPropagation(); expenseToDelete = btn.getAttribute('data-id'); openDeleteModal(); });
-      });
-    }
-
-    function escapeHTML(str) {
-      return String(str).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m] || m));
-    }
-
-    function showToast(message, type = '') {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.className = 'toast ' + type + ' show';
-      setTimeout(() => { toast.classList.remove('show'); }, 2500);
-    }
-
-    // ============================================
-    // MODAL FUNCTIONS
-    // ============================================
-    function openModal() {
-      document.getElementById('modalCategory').value = selectedCategoryId || (categories[0]?.id || '');
-      document.getElementById('modalAmount').value = '';
-      document.getElementById('modalDescription').value = '';
-      document.getElementById('amountError').classList.add('hidden');
-      const modal = document.getElementById('expenseModal');
-      modal.classList.remove('invisible', 'opacity-0');
-      modal.querySelector('.modal-form').classList.remove('translate-y-5');
-      setTimeout(() => document.getElementById('modalAmount').focus(), 100);
-    }
-
-    function closeModal() {
-      const modal = document.getElementById('expenseModal');
-      modal.classList.add('invisible', 'opacity-0');
-      modal.querySelector('.modal-form').classList.add('translate-y-5');
-    }
-
-    function openDeleteModal() { document.getElementById('deleteModal').classList.remove('invisible', 'opacity-0'); }
-    function closeDeleteModal() { document.getElementById('deleteModal').classList.add('invisible', 'opacity-0'); expenseToDelete = null; }
-
-    async function handleAddExpense() {
-      const amountStr = document.getElementById('modalAmount').value.trim();
-      const description = document.getElementById('modalDescription').value.trim();
-      const errorEl = document.getElementById('amountError');
-      errorEl.classList.add('hidden');
-
-      if (!amountStr) { errorEl.textContent = 'Please enter an amount'; errorEl.classList.remove('hidden'); return; }
-      const amount = parseFloat(amountStr);
-      if (isNaN(amount) || amount <= 0) { errorEl.textContent = 'Enter a valid positive amount'; errorEl.classList.remove('hidden'); return; }
-
-      const category = categories.find(c => c.id === selectedCategoryId);
-      const result = await addExpenseToDB({
-        user_id: currentUser?.id || 'demo-user',
-        category_id: selectedCategoryId,
-        amount: amount,
-        description: description || (category?.name || '') + ' expense',
-        expense_date: new Date().toISOString().split('T')[0]
-      });
-
-      if (result) {
-        closeModal();
-        await fetchExpenses();
-        showToast('Expense added! 💸', 'success');
-        document.getElementById('balanceCard').style.transform = 'scale(0.98)';
-        setTimeout(() => { document.getElementById('balanceCard').style.transform = ''; }, 150);
-      } else {
-        showToast('Failed to add expense', 'error');
-      }
-    }
-
-    async function handleDeleteExpense() {
-      if (!expenseToDelete) return;
-      const success = await deleteExpenseFromDB(expenseToDelete);
-      if (success) { closeDeleteModal(); await fetchExpenses(); showToast('Expense deleted 🗑️', 'success'); }
-      else { showToast('Failed to delete', 'error'); }
-    }
-
-    // ============================================
-    // EVENT LISTENERS
-    // ============================================
-    document.getElementById('openModalBtn').addEventListener('click', openModal);
-    document.getElementById('openModalTrigger').addEventListener('click', openModal);
-    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
-    document.getElementById('saveExpenseBtn').addEventListener('click', handleAddExpense);
-    document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
-    document.getElementById('confirmDeleteBtn').addEventListener('click', handleDeleteExpense);
-    document.getElementById('clearSelection').addEventListener('click', () => {
-      if (categories.length > 0) { selectedCategoryId = categories[0].id; selectedCategoryName = categories[0].name; highlightSelectedTag(); }
-    });
-    document.getElementById('expenseModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-    document.getElementById('deleteModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
-    document.getElementById('modalAmount').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); } });
-    document.getElementById('modalDescription').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); } });
-    document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-    document.getElementById('deleteAccountBtn').addEventListener('click', handleDeleteAccount);
-
-    // ============================================
-    // INIT
-    // ============================================
-    async function init() {
-      const { data: { user } } = await sb.auth.getUser();
-      if (user) {
-        const { data: profile } = await sb.from('profiles').select('currency, full_name').eq('id', user.id).single();
-        if (profile?.currency) { userCurrency = profile.currency; }
-        const name = profile?.full_name || user.email?.split('@')[0] || 'User';
-        updateGreeting(name);
-        updateInitials(name);
-        setCurrencySymbol();
-      }
-      
-      await Promise.all([fetchCategories(), fetchIncome(), fetchExpenses()]);
-      updateCurrencyLabels();
-      
-      if (categories.length > 0) {
-        selectedCategoryId = categories[0].id;
-        selectedCategoryName = categories[0].name;
-        highlightSelectedTag();
-      }
-    }
-
-    init();
+window.addEventListener('offline', () => {
+  document.getElementById('offlineBanner').classList.remove('hidden');
+});
 </script>
+  <script src="loader.js"></script>
+  <script src="alerts.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
