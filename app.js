@@ -206,7 +206,247 @@ async function handleDeleteAccount() {
 }
 
 // ============================================
-// ✅ TAB NAVIGATION (Fixed with chart cleanup)
+// GOALS SYSTEM
+// ============================================
+
+let goals = [];
+let editingGoalId = null;
+let selectedGoalIcon = '🎯';
+
+// Load goals from localStorage
+function loadGoals() {
+  try {
+    goals = JSON.parse(localStorage.getItem('pennyGoals')) || [];
+  } catch (e) {
+    goals = [];
+  }
+}
+
+// Save goals to localStorage
+function saveGoals() {
+  try {
+    localStorage.setItem('pennyGoals', JSON.stringify(goals));
+  } catch (e) {
+    console.error('Failed to save goals:', e);
+  }
+}
+
+// Render goals list
+function renderGoals() {
+  const container = document.getElementById('goalsList');
+  const emptyState = document.getElementById('goalsEmpty');
+  
+  if (!container) return;
+  
+  if (goals.length === 0) {
+    container.innerHTML = '';
+    if (emptyState) emptyState.classList.remove('hidden');
+    return;
+  }
+  
+  if (emptyState) emptyState.classList.add('hidden');
+  
+  container.innerHTML = goals.map((goal, index) => {
+    const progress = goal.target > 0 ? Math.min((goal.current / goal.target) * 100, 100) : 0;
+    const remaining = goal.target - goal.current;
+    const daysLeft = goal.date ? Math.ceil((new Date(goal.date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+    const dailyNeeded = daysLeft && daysLeft > 0 ? remaining / daysLeft : 0;
+    
+    return `
+      <div class="goal-card bg-white rounded-[20px] p-4 border border-gray-100 shadow-sm transition-all cursor-pointer" data-index="${index}">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${goal.icon || '🎯'}</span>
+            <div>
+              <h4 class="font-semibold text-sm text-[#1e1e2f]">${escapeHTML(goal.name)}</h4>
+              ${daysLeft && daysLeft > 0 ? 
+                `<p class="text-[10px] text-[#64748b]">${daysLeft} days left</p>` : 
+                '<p class="text-[10px] text-[#64748b]">No deadline</p>'
+              }
+            </div>
+          </div>
+          <div class="flex gap-1">
+            <button class="edit-goal-btn text-[#94a3b8] hover:text-blue-500 p-1" data-index="${index}">
+              <i class="fas fa-edit text-xs"></i>
+            </button>
+            <button class="delete-goal-btn text-[#94a3b8] hover:text-red-500 p-1" data-index="${index}">
+              <i class="fas fa-trash-alt text-xs"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="w-full bg-gray-100 rounded-full h-4 mb-2 overflow-hidden">
+          <div class="goal-progress h-4 rounded-full ${
+            progress >= 100 ? 'bg-green-500' : 
+            progress >= 50 ? 'bg-blue-500' : 
+            'bg-purple-500'
+          }" style="width: ${progress}%"></div>
+        </div>
+        
+        <div class="flex justify-between text-[10px] text-[#64748b]">
+          <span>${formatMoney(goal.current)} / ${formatMoney(goal.target)}</span>
+          <span>${progress.toFixed(0)}%</span>
+        </div>
+        
+        ${remaining > 0 ? `
+          <button class="add-to-goal-btn w-full mt-3 py-2 rounded-[12px] text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors" data-index="${index}">
+            <i class="fas fa-plus-circle mr-1"></i> Add Money
+          </button>
+        ` : `
+          <div class="mt-2 text-center">
+            <span class="text-xs text-green-600 font-semibold">🎉 Goal Achieved!</span>
+          </div>
+        `}
+      </div>
+    `;
+  }).join('');
+  
+  // Add event listeners
+  document.querySelectorAll('.edit-goal-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      editGoal(parseInt(btn.dataset.index));
+    });
+  });
+  
+  document.querySelectorAll('.delete-goal-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteGoal(parseInt(btn.dataset.index));
+    });
+  });
+  
+  document.querySelectorAll('.add-to-goal-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addMoneyToGoal(parseInt(btn.dataset.index));
+    });
+  });
+}
+
+function openGoalModal(editIndex = null) {
+  const modal = document.getElementById('goalModal');
+  if (!modal) return;
+  
+  const title = document.getElementById('goalModalTitle');
+  editingGoalId = editIndex;
+  
+  if (editIndex !== null && goals[editIndex]) {
+    title.textContent = 'Edit Goal';
+    const goal = goals[editIndex];
+    document.getElementById('goalName').value = goal.name || '';
+    document.getElementById('goalAmount').value = goal.target || '';
+    document.getElementById('goalCurrent').value = goal.current || '';
+    document.getElementById('goalDate').value = goal.date || '';
+    selectedGoalIcon = goal.icon || '🎯';
+  } else {
+    title.textContent = 'New Goal';
+    document.getElementById('goalName').value = '';
+    document.getElementById('goalAmount').value = '';
+    document.getElementById('goalCurrent').value = '';
+    document.getElementById('goalDate').value = '';
+    selectedGoalIcon = '🎯';
+  }
+  
+  document.querySelectorAll('.goal-icon').forEach(el => {
+    el.classList.toggle('selected', el.dataset.icon === selectedGoalIcon);
+  });
+  
+  modal.classList.remove('invisible', 'opacity-0');
+  modal.querySelector('.modal-form').classList.remove('translate-y-5');
+  setTimeout(() => document.getElementById('goalName')?.focus(), 100);
+}
+
+function closeGoalModal() {
+  const modal = document.getElementById('goalModal');
+  if (modal) {
+    modal.classList.add('invisible', 'opacity-0');
+    modal.querySelector('.modal-form').classList.add('translate-y-5');
+  }
+  editingGoalId = null;
+}
+
+function saveGoal() {
+  const name = document.getElementById('goalName').value.trim();
+  const target = parseFloat(document.getElementById('goalAmount').value) || 0;
+  const current = parseFloat(document.getElementById('goalCurrent').value) || 0;
+  const date = document.getElementById('goalDate').value;
+  
+  if (!name) {
+    alert.error('Please enter a goal name');
+    return;
+  }
+  if (target <= 0) {
+    alert.error('Please enter a target amount');
+    return;
+  }
+  
+  const goalData = { name, target, current, date, icon: selectedGoalIcon, createdAt: new Date().toISOString() };
+  
+  if (editingGoalId !== null) {
+    goals[editingGoalId] = { ...goals[editingGoalId], ...goalData };
+    alert.success('Goal updated! 🎯');
+  } else {
+    goals.push(goalData);
+    alert.success('Goal created! 🎯');
+  }
+  
+  saveGoals();
+  closeGoalModal();
+  renderGoals();
+}
+
+function editGoal(index) {
+  openGoalModal(index);
+}
+
+function deleteGoal(index) {
+  if (confirm('Delete this goal?')) {
+    goals.splice(index, 1);
+    saveGoals();
+    renderGoals();
+    alert.success('Goal deleted');
+  }
+}
+
+function addMoneyToGoal(index) {
+  const amount = prompt('How much to add?');
+  if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+    goals[index].current += parseFloat(amount);
+    saveGoals();
+    renderGoals();
+    alert.success(`Added ${formatMoney(amount)} to goal!`);
+    
+    if (goals[index].current >= goals[index].target) {
+      setTimeout(() => {
+        alert.success(`🎉 Goal reached: "${goals[index].name}"!`);
+      }, 500);
+    }
+  }
+}
+
+// Goal event listeners
+document.getElementById('addGoalBtn')?.addEventListener('click', () => openGoalModal());
+document.getElementById('cancelGoalBtn')?.addEventListener('click', closeGoalModal);
+document.getElementById('saveGoalBtn')?.addEventListener('click', saveGoal);
+document.getElementById('goalModal')?.addEventListener('click', function(e) { 
+  if (e.target === this) closeGoalModal(); 
+});
+
+// Goal icon selection
+document.querySelectorAll('.goal-icon').forEach(icon => {
+  icon.addEventListener('click', function() {
+    document.querySelectorAll('.goal-icon').forEach(el => el.classList.remove('selected'));
+    this.classList.add('selected');
+    selectedGoalIcon = this.dataset.icon;
+  });
+});
+
+// Load goals on startup
+loadGoals();
+
+// ============================================
+// ✅ TAB NAVIGATION (Fixed)
 // ============================================
 function switchTab(tab) {
   if (tab !== 'stats') {
@@ -229,26 +469,34 @@ function switchTab(tab) {
   const expenseList = document.getElementById('expenseListContainer');
   const profilePanel = document.getElementById('profilePanel');
   const statsPanel = document.getElementById('statsPanel');
+  const goalsPanel = document.getElementById('goalsPanel');
   const quickAdd = document.getElementById('quickAddSection');
   const addExpense = document.getElementById('addExpenseSection');
   const addIncomeBtn = document.getElementById('addIncomeBtn');
   
+  // Hide everything first
   appHeader.classList.add('hidden');
   balanceCard.classList.add('hidden');
   expenseList.classList.add('hidden');
   profilePanel.classList.add('hidden');
   if (statsPanel) statsPanel.classList.add('hidden');
+  if (goalsPanel) goalsPanel.classList.add('hidden');
   quickAdd.classList.add('hidden');
   addExpense.classList.add('hidden');
   if (addIncomeBtn) addIncomeBtn.classList.add('hidden');
   
-  if (tab === 'home' || tab === 'history') {
+  // Show based on tab
+  if (tab === 'home') {
     appHeader.classList.remove('hidden');
     balanceCard.classList.remove('hidden');
     expenseList.classList.remove('hidden');
     quickAdd.classList.remove('hidden');
     addExpense.classList.remove('hidden');
     if (addIncomeBtn) addIncomeBtn.classList.remove('hidden');
+  } else if (tab === 'goals') {
+    // ✅ Show ONLY goals panel
+    if (goalsPanel) goalsPanel.classList.remove('hidden');
+    renderGoals();
   } else if (tab === 'stats') {
     if (statsPanel) statsPanel.classList.remove('hidden');
     loadStats();
@@ -344,60 +592,164 @@ async function deleteExpenseFromDB(id) {
 }
 
 // ============================================
-// ✅ STATS & ANALYTICS
+// ✅ STATS & ANALYTICS (FULLY FIXED)
 // ============================================
 async function loadStats() {
   destroyCharts();
   
-  const totalExpense = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
-  const budget = parseFloat(document.getElementById('editBudget')?.value) || 0;
+  const totalExpense = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
   
+  // ✅ FIX: Try multiple sources for budget
+  const budget = parseFloat(document.getElementById('editBudget')?.value) || 
+                 parseFloat(localStorage.getItem('pennyBudget')) || 
+                 0;
+  
+  // ✅ Save budget to localStorage as backup
   if (budget > 0) {
-    const percent = Math.min((totalExpense / budget) * 100, 100);
-    document.getElementById('statsBudgetBar').style.width = percent + '%';
-    document.getElementById('statsBudgetText').textContent = `${formatMoney(totalExpense)} / ${formatMoney(budget)}`;
-    
-    const bar = document.getElementById('statsBudgetBar');
-    const warning = document.getElementById('statsBudgetWarning');
-    if (percent > 100) {
-      bar.className = 'bg-[#ef4444] h-3 rounded-full transition-all duration-500';
-      warning.textContent = '⚠️ You have exceeded your budget!';
-      warning.classList.remove('hidden');
-    } else if (percent > 80) {
-      bar.className = 'bg-[#f59e0b] h-3 rounded-full transition-all duration-500';
-      warning.textContent = '⚠️ Almost at your limit!';
-      warning.classList.remove('hidden');
-    } else {
-      bar.className = 'bg-[#10b981] h-3 rounded-full transition-all duration-500';
-      warning.classList.add('hidden');
-    }
+    localStorage.setItem('pennyBudget', budget);
   }
   
-  document.getElementById('totalTransactions').textContent = expenses.length;
+  // ============================================
+  // BUDGET PROGRESS BAR
+  // ============================================
+  if (budget > 0) {
+    const percent = Math.min((totalExpense / budget) * 100, 100);
+    const bar = document.getElementById('statsBudgetBar');
+    const warning = document.getElementById('statsBudgetWarning');
+    const budgetText = document.getElementById('statsBudgetText');
+    
+    if (bar) bar.style.width = percent + '%';
+    if (budgetText) budgetText.textContent = formatMoney(totalExpense);
+    
+    // ✅ Update "of $X limit" label
+    const budgetLabel = document.querySelector('#statsBudgetText + span');
+    if (budgetLabel) {
+      budgetLabel.textContent = `of ${formatMoney(budget)} limit`;
+    }
+    
+    // Color coding
+    if (percent > 100) {
+      if (bar) bar.className = 'bg-[#ef4444] h-3 rounded-full transition-all duration-500';
+      if (warning) {
+        warning.textContent = '⚠️ You have exceeded your budget!';
+        warning.classList.remove('hidden');
+      }
+    } else if (percent > 80) {
+      if (bar) bar.className = 'bg-[#f59e0b] h-3 rounded-full transition-all duration-500';
+      if (warning) {
+        warning.textContent = '⚠️ Almost at your limit!';
+        warning.classList.remove('hidden');
+      }
+    } else {
+      if (bar) bar.className = 'bg-[#10b981] h-3 rounded-full transition-all duration-500';
+      if (warning) warning.classList.add('hidden');
+    }
+    
+    // ✅ UPDATE REMAINING BUDGET CARD
+    const remaining = budget - totalExpense;
+    const budgetLeftAmount = document.getElementById('budgetLeftAmount');
+    const budgetRemainingBar = document.getElementById('budgetRemainingBar');
+    
+    if (budgetLeftAmount) {
+      budgetLeftAmount.textContent = remaining >= 0 ? formatMoney(remaining) : formatMoney(0);
+    }
+    if (budgetRemainingBar) {
+      const remainingPercent = Math.max(0, (remaining / budget) * 100);
+      budgetRemainingBar.style.width = remainingPercent + '%';
+    }
+  } else {
+    // No budget set
+    const budgetLeftAmount = document.getElementById('budgetLeftAmount');
+    const budgetText = document.getElementById('statsBudgetText');
+    const budgetLabel = document.querySelector('#statsBudgetText + span');
+    
+    if (budgetLeftAmount) budgetLeftAmount.textContent = formatMoney(0);
+    if (budgetText) budgetText.textContent = formatMoney(0);
+    if (budgetLabel) budgetLabel.textContent = 'Set a budget in Profile';
+  }
   
+  // ============================================
+  // QUICK STATS
+  // ============================================
+  const totalTxEl = document.getElementById('totalTransactions');
+  const avgDailyEl = document.getElementById('avgDailySpend');
+  const thisMonthEl = document.getElementById('thisMonthTotal');
+  const topCategoryEl = document.getElementById('topCategory');
+  const topCategoryPercentEl = document.getElementById('topCategoryPercent');
+  const largestExpenseEl = document.getElementById('largestExpense');
+  const largestExpenseNameEl = document.getElementById('largestExpenseName');
+  
+  // Total transactions
+  if (totalTxEl) totalTxEl.textContent = expenses.length;
+  
+  // Average daily spend
   const daysWithExpenses = new Set(expenses.map(e => e.expense_date || e.created_at?.split('T')[0])).size || 1;
-  document.getElementById('avgDailySpend').textContent = formatMoney(totalExpense / daysWithExpenses);
+  if (avgDailyEl) avgDailyEl.textContent = formatMoney(totalExpense / daysWithExpenses);
   
+  // This month total
   const now = new Date();
   const thisMonth = expenses.filter(e => {
     const d = new Date(e.expense_date || e.created_at);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  document.getElementById('thisMonthTotal').textContent = formatMoney(thisMonth.reduce((s, e) => s + parseFloat(e.amount), 0));
+  const thisMonthTotal = thisMonth.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+  if (thisMonthEl) thisMonthEl.textContent = formatMoney(thisMonthTotal);
   
+  // Month trend
+  const monthTrendIcon = document.getElementById('monthTrendIcon');
+  const monthTrendText = document.getElementById('monthTrendText');
+  if (monthTrendIcon && monthTrendText) {
+    // For now show neutral since we don't have last month data
+    monthTrendIcon.textContent = '📊';
+    monthTrendText.textContent = 'Track your spending';
+  }
+  
+  // Category totals
   const catTotals = {};
   expenses.forEach(e => {
     const name = e.categories?.name || 'Other';
-    catTotals[name] = (catTotals[name] || 0) + parseFloat(e.amount);
+    catTotals[name] = (catTotals[name] || 0) + parseFloat(e.amount || 0);
   });
-  const topCat = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
-  document.getElementById('topCategory').textContent = topCat ? topCat[0] : '-';
   
+  // Top category
+  const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  const topCat = sortedCats[0];
+  
+  if (topCategoryEl) {
+    topCategoryEl.textContent = topCat ? topCat[0] : '—';
+  }
+  if (topCategoryPercentEl && topCat && totalExpense > 0) {
+    topCategoryPercentEl.textContent = ((topCat[1] / totalExpense) * 100).toFixed(0) + '% of total';
+  } else if (topCategoryPercentEl) {
+    topCategoryPercentEl.textContent = '0% of total';
+  }
+  
+  // ✅ LARGEST EXPENSE
+  const largest = expenses.reduce((max, e) => {
+    const amount = parseFloat(e?.amount || 0);
+    const maxAmount = parseFloat(max?.amount || 0);
+    return amount > maxAmount ? e : max;
+  }, expenses[0] || null);
+  
+  if (largestExpenseEl) {
+    largestExpenseEl.textContent = largest ? formatMoney(largest.amount) : formatMoney(0);
+  }
+  if (largestExpenseNameEl) {
+    largestExpenseNameEl.textContent = largest ? (largest.description || largest.categories?.name || '—') : '—';
+  }
+  
+  // ============================================
+  // CHARTS
+  // ============================================
   renderCategoryChart(catTotals);
   renderWeeklyChart();
   
+  // ============================================
+  // INSIGHTS
+  // ============================================
   renderInsights(catTotals, totalExpense, budget);
 }
+
 
 function renderCategoryChart(catTotals) {
   const ctx = document.getElementById('categoryChart')?.getContext('2d');
@@ -695,6 +1047,7 @@ function renderExpenseList() {
   document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', (e) => { e.stopPropagation(); expenseToDelete = btn.getAttribute('data-id'); openDeleteModal(); });
   });
+setTimeout(() => buildFilterChips(), 100);
 }
 
 function escapeHTML(str) {
@@ -753,6 +1106,174 @@ async function handleAddExpense() {
     alert.error('Failed to add expense');
   }
 }
+
+// ============================================
+// AI INTEGRATION (FULLY FIXED)
+// ============================================
+
+// Override openModal to add AI smart features
+const originalOpenModal = openModal;
+openModal = function() {
+  // Call original first
+  originalOpenModal();
+  
+  const descInput = document.getElementById('modalDescription');
+  const amountInput = document.getElementById('modalAmount');
+  const categorySelect = document.getElementById('modalCategory');
+  
+  if (!descInput || !amountInput || !categorySelect) return;
+  
+  // Remove any existing AI hint
+  const existingHint = descInput.parentElement?.querySelector('.ai-hint');
+  if (existingHint) existingHint.remove();
+  
+  // Smart parsing on EVERY input
+  descInput.addEventListener('input', function() {
+    const text = this.value.trim();
+    
+    if (text.length < 2) return;
+    
+    console.log('🔍 AI analyzing:', text);
+    
+    // Try to parse with AI
+    const parsed = pennyAI.parseExpense(text);
+    
+    if (parsed) {
+      console.log('✅ AI result:', parsed);
+      
+      // Show hint
+      let hint = this.parentElement.querySelector('.ai-hint');
+      if (!hint) {
+        hint = document.createElement('div');
+        hint.className = 'ai-hint text-[10px] text-green-600 mt-1 font-medium';
+        this.parentElement.appendChild(hint);
+      }
+      
+      hint.textContent = `✨ ${parsed.category} • ${parsed.description || text}`;
+      
+      // ✅ AUTO-FILL AMOUNT
+      if (parsed.amount && parsed.amount > 0) {
+        amountInput.value = parsed.amount;
+        amountInput.style.borderColor = '#10b981';
+        amountInput.style.backgroundColor = '#f0fdf4';
+        setTimeout(() => {
+          amountInput.style.borderColor = '';
+          amountInput.style.backgroundColor = '';
+        }, 2000);
+      }
+      
+      // ✅ AUTO-SELECT CATEGORY (overrides previous selection)
+      if (parsed.category && parsed.category !== 'Other') {
+        const options = Array.from(categorySelect.options);
+        const match = options.find(opt => 
+          opt.text.toLowerCase() === parsed.category.toLowerCase()
+        );
+        
+        if (match) {
+          categorySelect.value = match.value;
+          categorySelect.style.borderColor = '#10b981';
+          categorySelect.style.backgroundColor = '#f0fdf4';
+          
+          // Update selectedCategoryId so the tag highlights correctly
+          selectedCategoryId = match.value;
+          selectedCategoryName = parsed.category;
+          highlightSelectedTag();
+          
+          console.log('✅ Category set to:', parsed.category);
+          
+          setTimeout(() => {
+            categorySelect.style.borderColor = '';
+            categorySelect.style.backgroundColor = '';
+          }, 2000);
+        } else {
+          console.log('⚠️ Category not found in dropdown:', parsed.category);
+          // List available categories for debugging
+          console.log('Available:', options.map(o => o.text));
+        }
+      }
+    }
+  });
+  
+  // Focus description field for immediate typing
+  setTimeout(() => descInput.focus(), 150);
+};
+
+// Learn from user's manual categorization
+const originalHandleAddExpense = handleAddExpense;
+handleAddExpense = async function() {
+  const amountStr = document.getElementById('modalAmount')?.value.trim();
+  const description = document.getElementById('modalDescription')?.value.trim();
+  const catId = document.getElementById('modalCategory')?.value;
+  const errorEl = document.getElementById('amountError');
+  
+  if (errorEl) errorEl.classList.add('hidden');
+  
+  // Validate
+  if (!amountStr) { 
+    if (errorEl) {
+      errorEl.textContent = 'Please enter an amount'; 
+      errorEl.classList.remove('hidden');
+    }
+    document.getElementById('modalAmount')?.focus();
+    return; 
+  }
+  
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0) { 
+    if (errorEl) {
+      errorEl.textContent = 'Enter a valid positive amount'; 
+      errorEl.classList.remove('hidden');
+    }
+    return; 
+  }
+  
+  // ✅ TEACH AI - Learn from this categorization
+  const cat = categories.find(c => c.id === catId);
+  if (description && cat) {
+    console.log('🧠 Teaching AI:', description, '→', cat.name);
+    pennyAI.learn(description, cat.name);
+  }
+  
+  // Call original function
+  await originalHandleAddExpense();
+};
+
+// Replace insights with AI version
+const originalRenderInsights = renderInsights;
+renderInsights = function(catTotals, totalExpense, budget) {
+  const insightsList = document.getElementById('insightsList');
+  if (!insightsList) return;
+  
+  // Use AI insights if available
+  if (typeof pennyAI !== 'undefined' && expenses.length > 0) {
+    try {
+      const aiInsights = pennyAI.generateInsights(expenses, budget);
+      
+      if (aiInsights && aiInsights.length > 0) {
+        insightsList.innerHTML = aiInsights.map(i => `
+          <li class="flex items-start gap-3 p-3 rounded-xl ${
+            i.type === 'danger' ? 'bg-red-50 border border-red-100' :
+            i.type === 'warning' ? 'bg-amber-50 border border-amber-100' :
+            i.type === 'success' ? 'bg-green-50 border border-green-100' :
+            'bg-blue-50 border border-blue-100'
+          }">
+            <span class="text-lg mt-0.5">${i.icon}</span>
+            <div>
+              <p class="font-semibold text-xs text-gray-800">${i.title}</p>
+              <p class="text-[11px] text-gray-600">${i.message}</p>
+            </div>
+          </li>
+        `).join('');
+        return;
+      }
+    } catch (e) {
+      console.error('AI insights error:', e);
+    }
+  }
+  
+  // Fallback to original insights
+  originalRenderInsights(catTotals, totalExpense, budget);
+};
 
 async function handleDeleteExpense() {
   if (!expenseToDelete) return;
@@ -858,6 +1379,300 @@ async function safeFetch(fetchFn, fallback = null) {
     return fallback;
   }
 }
+// ============================================
+// SEARCH & FILTER
+// ============================================
+
+let currentFilter = 'all';
+let searchQuery = '';
+
+function initSearchFilter() {
+  const searchInput = document.getElementById('searchExpenses');
+  const clearBtn = document.getElementById('clearSearch');
+  
+  if (!searchInput) return;
+  
+  // Search on input
+  searchInput.addEventListener('input', function() {
+    searchQuery = this.value.toLowerCase().trim();
+    
+    // Show/hide clear button
+    if (clearBtn) {
+      clearBtn.classList.toggle('hidden', searchQuery === '');
+    }
+    
+    filterExpenses();
+  });
+  
+  // Clear search
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchQuery = '';
+      clearBtn.classList.add('hidden');
+      filterExpenses();
+      searchInput.focus();
+    });
+  }
+  
+  // Build filter chips from categories
+  buildFilterChips();
+}
+
+function buildFilterChips() {
+  const container = document.getElementById('filterChips');
+  if (!container) return;
+  
+  // Get unique categories from expenses
+  const usedCategories = [...new Set(expenses.map(e => e.categories?.name || 'Other'))];
+  
+  // Add category chips
+  const chipsHTML = usedCategories.map(cat => `
+    <button class="filter-chip whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-medium bg-[#f1f5f9] text-[#64748b]" data-filter="${cat.toLowerCase()}">
+      ${cat}
+    </button>
+  `).join('');
+  
+  container.innerHTML = `
+    <button class="filter-chip active whitespace-nowrap px-3 py-1.5 rounded-full text-[10px] font-medium bg-[#1e293b] text-white" data-filter="all">All</button>
+    ${chipsHTML}
+  `;
+  
+  // Add click handlers
+  container.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      currentFilter = this.dataset.filter;
+      filterExpenses();
+    });
+  });
+}
+
+// ============================================
+// RECURRING EXPENSES
+// ============================================
+
+let recurringExpenses = [];
+
+function loadRecurringExpenses() {
+  try {
+    recurringExpenses = JSON.parse(localStorage.getItem('pennyRecurring')) || [];
+  } catch (e) {
+    recurringExpenses = [];
+  }
+}
+
+function saveRecurringExpenses() {
+  localStorage.setItem('pennyRecurring', JSON.stringify(recurringExpenses));
+}
+
+// Add recurring checkbox to expense modal
+function addRecurringOption() {
+  const modalForm = document.querySelector('#expenseModal .modal-form');
+  if (!modalForm || document.getElementById('recurringOption')) return;
+  
+  const recurringDiv = document.createElement('div');
+  recurringDiv.id = 'recurringOption';
+  recurringDiv.className = 'mb-3 sm:mb-[18px]';
+  recurringDiv.innerHTML = `
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" id="isRecurring" class="w-4 h-4 rounded border-gray-300 text-[#1e293b] focus:ring-[#1e293b]">
+      <span class="text-[10px] sm:text-xs font-semibold text-[#475569]">Recurring monthly expense</span>
+    </label>
+    <div id="recurringInfo" class="hidden mt-2">
+      <p class="text-[10px] text-[#64748b]">
+        <i class="fas fa-sync-alt mr-1"></i> 
+        Will auto-add on the <strong>1st of each month</strong>
+      </p>
+    </div>
+  `;
+  
+  // Insert before buttons
+  const buttons = modalForm.querySelector('.flex.gap-2');
+  if (buttons) {
+    modalForm.insertBefore(recurringDiv, buttons);
+  }
+  
+  // Toggle info
+  document.getElementById('isRecurring').addEventListener('change', function() {
+    document.getElementById('recurringInfo').classList.toggle('hidden', !this.checked);
+  });
+}
+
+// Override openModal to add recurring option
+const origOpenModal = openModal;
+openModal = function() {
+  origOpenModal();
+  setTimeout(addRecurringOption, 50);
+};
+
+// Override handleAddExpense to save recurring
+const origHandleAddExpense = handleAddExpense;
+handleAddExpense = async function() {
+  const isRecurring = document.getElementById('isRecurring')?.checked;
+  const description = document.getElementById('modalDescription')?.value.trim();
+  const amount = parseFloat(document.getElementById('modalAmount')?.value) || 0;
+  const categoryId = document.getElementById('modalCategory')?.value;
+  const category = categories.find(c => c.id === categoryId);
+  
+  await origHandleAddExpense();
+  
+  // Save recurring after successful add
+  if (isRecurring && description) {
+    recurringExpenses.push({
+      description,
+      amount,
+      category: category?.name || 'Other',
+      categoryId,
+      dayOfMonth: 1,
+      createdAt: new Date().toISOString()
+    });
+    saveRecurringExpenses();
+    alert.success('Marked as recurring! 🔄');
+  }
+};
+
+// Auto-add recurring expenses
+async function checkRecurringExpenses() {
+  const today = new Date();
+  const isFirstOfMonth = today.getDate() === 1;
+  
+  if (!isFirstOfMonth) return;
+  
+  // Check if already added this month
+  const lastRun = localStorage.getItem('pennyRecurringLastRun');
+  const thisMonth = `${today.getFullYear()}-${today.getMonth()}`;
+  
+  if (lastRun === thisMonth) return;
+  
+  for (const rec of recurringExpenses) {
+    try {
+      await addExpenseToDB({
+        user_id: currentUser?.id || 'demo-user',
+        category_id: rec.categoryId,
+        amount: rec.amount,
+        description: rec.description,
+        expense_date: new Date().toISOString().split('T')[0]
+      });
+    } catch (e) {
+      console.error('Failed to add recurring:', rec.description, e);
+    }
+  }
+  
+  localStorage.setItem('pennyRecurringLastRun', thisMonth);
+  
+  if (recurringExpenses.length > 0) {
+    await fetchExpenses();
+    alert.success(`✅ Added ${recurringExpenses.length} recurring expenses!`);
+  }
+}
+
+// View recurring expenses
+function showRecurringList() {
+  if (recurringExpenses.length === 0) {
+    alert.info('No recurring expenses set up yet. Check "Recurring" when adding an expense.');
+    return;
+  }
+  
+  const list = recurringExpenses.map((r, i) => 
+    `${i + 1}. ${r.description} - ${formatMoney(r.amount)} (${r.category})`
+  ).join('\n');
+  
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="bg-white rounded-[24px] p-6 max-w-sm w-full">
+      <h3 class="font-bold text-lg mb-3">🔄 Recurring Expenses</h3>
+      <div class="text-sm text-gray-600 mb-4 whitespace-pre-line">${list}</div>
+      <p class="text-[10px] text-gray-400 mb-4">Auto-added on the 1st of each month</p>
+      <button class="w-full py-2.5 bg-red-50 text-red-600 rounded-xl font-medium text-sm" id="clearRecurring">
+        Clear All Recurring
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+  
+  modal.querySelector('#clearRecurring').addEventListener('click', () => {
+    recurringExpenses = [];
+    saveRecurringExpenses();
+    modal.remove();
+    alert.success('All recurring expenses cleared');
+  });
+}
+
+// Add recurring button to home screen
+function addRecurringButton() {
+  const addIncomeBtn = document.getElementById('addIncomeBtn');
+  if (!addIncomeBtn || document.getElementById('recurringBtn')) return;
+  
+  const btn = document.createElement('button');
+  btn.id = 'recurringBtn';
+  btn.className = 'text-[10px] sm:text-xs text-purple-500 font-semibold cursor-pointer hover:opacity-70 flex items-center gap-1 ml-3';
+  btn.innerHTML = '<i class="fas fa-sync-alt"></i> Recurring';
+  btn.addEventListener('click', showRecurringList);
+  
+  addIncomeBtn.parentElement.appendChild(btn);
+}
+
+// Initialize
+loadRecurringExpenses();
+
+// Update init()
+const origInit = init;
+init = async function() {
+  await origInit();
+  addRecurringButton();
+  await checkRecurringExpenses();
+};
+
+function filterExpenses() {
+  let filtered = [...expenses];
+  
+  // Apply category filter
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(e => 
+      (e.categories?.name || 'Other').toLowerCase() === currentFilter
+    );
+  }
+  
+  // Apply search
+  if (searchQuery) {
+    filtered = filtered.filter(e => 
+      (e.description || '').toLowerCase().includes(searchQuery) ||
+      (e.categories?.name || '').toLowerCase().includes(searchQuery) ||
+      formatMoney(e.amount).toLowerCase().includes(searchQuery)
+    );
+  }
+  
+  // Render filtered list
+  renderFilteredList(filtered);
+}
+
+function renderFilteredList(filteredExpenses) {
+  const container = document.getElementById('expenseListContainer');
+  if (!container) return;
+  
+  if (filteredExpenses.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-8 text-[#94a3b8] text-sm">
+        <i class="fas fa-search text-3xl mb-2.5 block"></i>
+        No expenses found
+      </div>`;
+    return;
+  }
+  
+  // Use same rendering as renderExpenseList but with filtered data
+  const originalExpenses = expenses;
+  expenses = filteredExpenses;
+  renderExpenseList();
+  expenses = originalExpenses;
+}
 
 // ============================================
 // INIT
@@ -886,7 +1701,8 @@ async function init() {
   }
   
   initScrollBehavior();
-  
+   
+   initSearchFilter();
   loader.hideAll();
 }
 
