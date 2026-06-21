@@ -59,6 +59,20 @@ function updateCurrencyLabels() {
 }
 
 // ============================================
+// ✅ CHART DESTRUCTION HELPER
+// ============================================
+function destroyCharts() {
+  if (categoryChart) {
+    categoryChart.destroy();
+    categoryChart = null;
+  }
+  if (weeklyChart) {
+    weeklyChart.destroy();
+    weeklyChart = null;
+  }
+}
+
+// ============================================
 // PROFILE FUNCTIONS
 // ============================================
 async function loadProfile() {
@@ -148,9 +162,14 @@ async function handleDeleteAccount() {
 }
 
 // ============================================
-// ✅ TAB NAVIGATION (Updated with Stats)
+// ✅ TAB NAVIGATION (Fixed with chart cleanup)
 // ============================================
 function switchTab(tab) {
+  // ✅ Destroy charts when leaving stats tab
+  if (tab !== 'stats') {
+    destroyCharts();
+  }
+  
   document.querySelectorAll('.nav-item').forEach(n => {
     n.classList.remove('text-[#1e293b]');
     n.classList.add('text-[#94a3b8]');
@@ -282,9 +301,12 @@ async function deleteExpenseFromDB(id) {
 }
 
 // ============================================
-// ✅ STATS & ANALYTICS
+// ✅ STATS & ANALYTICS (Fixed with proper chart cleanup)
 // ============================================
 async function loadStats() {
+  // ✅ Destroy existing charts first
+  destroyCharts();
+  
   const totalExpense = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
   const budget = parseFloat(document.getElementById('editBudget')?.value) || 0;
   
@@ -341,11 +363,16 @@ async function loadStats() {
   renderInsights(catTotals, totalExpense, budget);
 }
 
+// ✅ FIXED: Category Chart with proper destruction
 function renderCategoryChart(catTotals) {
   const ctx = document.getElementById('categoryChart')?.getContext('2d');
   if (!ctx) return;
   
-  if (categoryChart) categoryChart.destroy();
+  // ✅ Destroy existing chart first
+  if (categoryChart) {
+    categoryChart.destroy();
+    categoryChart = null;
+  }
   
   const colors = ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899', '#ef4444', '#f97316', '#06b6d4'];
   const labels = Object.keys(catTotals);
@@ -373,11 +400,16 @@ function renderCategoryChart(catTotals) {
   });
 }
 
+// ✅ FIXED: Weekly Chart with proper destruction
 function renderWeeklyChart() {
   const ctx = document.getElementById('weeklyChart')?.getContext('2d');
   if (!ctx) return;
   
-  if (weeklyChart) weeklyChart.destroy();
+  // ✅ Destroy existing chart first
+  if (weeklyChart) {
+    weeklyChart.destroy();
+    weeklyChart = null;
+  }
   
   const days = [];
   for (let i = 6; i >= 0; i--) {
@@ -800,4 +832,5 @@ async function init() {
   loader.hide();
 }
 
+// Start the app - ONLY call init() once!
 init();
