@@ -44,15 +44,107 @@
         background: linear-gradient(135deg, #e8e4df 0%, #f5f3f0 30%, #dfd9d2 70%, #f0ece8 100%);
       }
     }
+
+    /* Skeleton Loading Animation */
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    
+    .skeleton {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: 12px;
+    }
+    
+    .skeleton-circle {
+      border-radius: 50%;
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+    
+    .skeleton-text {
+      height: 16px;
+      margin-bottom: 8px;
+    }
+    
+    .skeleton-text-sm {
+      height: 12px;
+      width: 60%;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body class="bg-[#f5f3f0] flex justify-center items-center min-h-screen p-4 sm:p-5 m-0">
 
-  <!-- Setup Container -->
-  <div class="w-full max-w-[420px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative p-6 sm:p-8">
+  <!-- ============================================ -->
+  <!-- SKELETON LOADING STATE -->
+  <!-- ============================================ -->
+  <div id="skeletonLoader" class="w-full max-w-[420px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative p-6 sm:p-8">
+    
+    <!-- Logo Skeleton -->
+    <div class="flex flex-col items-center mb-6">
+      <div class="skeleton w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] mb-3"></div>
+      <div class="skeleton skeleton-text w-48"></div>
+      <div class="skeleton skeleton-text-sm w-36 mt-2"></div>
+    </div>
+
+    <!-- Step Dots Skeleton -->
+    <div class="flex justify-center gap-2 mb-8">
+      <div class="skeleton w-2.5 h-2.5 rounded-full"></div>
+      <div class="skeleton w-2.5 h-2.5 rounded-full"></div>
+      <div class="skeleton w-2.5 h-2.5 rounded-full"></div>
+    </div>
+
+    <!-- Step Content Skeleton -->
+    <div class="mb-6">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="skeleton w-6 h-6 rounded-full"></div>
+        <div class="skeleton skeleton-text w-40"></div>
+      </div>
+      <div class="skeleton skeleton-text-sm w-56 ml-8 mb-5"></div>
+      
+      <div class="ml-8">
+        <div class="skeleton w-full h-12 rounded-[16px]"></div>
+      </div>
+    </div>
+
+    <!-- Buttons Skeleton -->
+    <div class="flex gap-3 justify-between mt-4">
+      <div class="skeleton w-24 h-12 rounded-[30px]"></div>
+      <div class="skeleton w-28 h-12 rounded-[30px] ml-auto"></div>
+    </div>
+
+    <!-- Skip Skeleton -->
+    <div class="flex justify-center mt-5">
+      <div class="skeleton skeleton-text-sm w-24"></div>
+    </div>
+
+    <!-- Loading Text -->
+    <div class="text-center mt-6">
+      <p class="text-sm text-[#94a3b8] flex items-center justify-center gap-2">
+        <i class="fas fa-spinner fa-spin"></i> Setting things up...
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- ACTUAL SETUP CONTAINER (Hidden initially) -->
+  <!-- ============================================ -->
+  <div id="setupContainer" class="w-full max-w-[420px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_30px_50px_rgba(0,0,0,0.08),0_10px_25px_rgba(0,0,0,0.05)] overflow-hidden relative p-6 sm:p-8 hidden">
 
     <!-- Logo -->
-    <div class="text-center mb-6">
+    <div class="text-center mb-6 fade-in">
       <div class="bg-[#1e293b] w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] flex items-center justify-center mx-auto mb-3 shadow-[0_8px_20px_rgba(15,23,42,0.2)]">
         <i class="fas fa-coins text-xl sm:text-2xl text-white"></i>
       </div>
@@ -61,14 +153,14 @@
     </div>
 
     <!-- Step Indicator -->
-    <div class="flex justify-center gap-2 mb-8">
+    <div class="flex justify-center gap-2 mb-8 fade-in">
       <div id="stepDot1" class="step-dot bg-[#1e293b]"></div>
       <div id="stepDot2" class="step-dot bg-[#e2e8f0]"></div>
       <div id="stepDot3" class="step-dot bg-[#e2e8f0]"></div>
     </div>
 
     <!-- STEP 1: Name -->
-    <div id="step1">
+    <div id="step1" class="fade-in">
       <div class="flex items-center gap-2 mb-2">
         <span class="bg-[#1e293b] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">1</span>
         <h3 class="font-semibold text-lg text-[#1e1e2f]">What's your name?</h3>
@@ -84,7 +176,7 @@
     </div>
 
     <!-- STEP 2: Starting Balance -->
-    <div id="step2" class="hidden">
+    <div id="step2" class="hidden fade-in">
       <div class="flex items-center gap-2 mb-2">
         <span class="bg-[#1e293b] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">2</span>
         <h3 class="font-semibold text-lg text-[#1e1e2f]">What's your starting balance?</h3>
@@ -100,7 +192,7 @@
     </div>
 
     <!-- STEP 3: Currency -->
-    <div id="step3" class="hidden">
+    <div id="step3" class="hidden fade-in">
       <div class="flex items-center gap-2 mb-2">
         <span class="bg-[#1e293b] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">3</span>
         <h3 class="font-semibold text-lg text-[#1e1e2f]">Choose your currency</h3>
@@ -127,7 +219,7 @@
     <div id="setupError" class="text-red-500 text-xs mb-4 hidden text-center"></div>
 
     <!-- Buttons -->
-    <div class="flex gap-3 justify-between mt-4">
+    <div class="flex gap-3 justify-between mt-4 fade-in">
       <button id="backBtn" class="py-3 px-5 rounded-[30px] font-semibold text-sm bg-[#f1f5f9] text-[#1e293b] hover:-translate-y-px active:scale-[0.97] transition-all hidden">
         <i class="fas fa-arrow-left"></i> Back
       </button>
@@ -140,7 +232,7 @@
     </div>
 
     <!-- Skip -->
-    <p class="text-center text-xs text-[#94a3b8] mt-5">
+    <p class="text-center text-xs text-[#94a3b8] mt-5 fade-in">
       <span id="skipSetup" class="text-[#d96c4a] cursor-pointer hover:opacity-70 transition-opacity">Skip for now</span>
     </p>
   </div>
@@ -169,28 +261,75 @@
     let userId = null;
 
     // ============================================
+    // SKELETON LOADER
+    // ============================================
+    function showSkeleton() {
+      document.getElementById('skeletonLoader').style.display = 'block';
+      document.getElementById('setupContainer').classList.add('hidden');
+    }
+
+    function hideSkeleton() {
+      document.getElementById('skeletonLoader').style.display = 'none';
+      document.getElementById('setupContainer').classList.remove('hidden');
+      
+      // Add fade-in animation to elements
+      setTimeout(() => {
+        document.querySelectorAll('.fade-in').forEach((el, index) => {
+          el.style.animationDelay = (index * 0.1) + 's';
+        });
+      }, 50);
+    }
+
+    // ============================================
     // CHECK AUTH
     // ============================================
     async function checkAuth() {
-      const { data: { user } } = await sb.auth.getUser();
+      showSkeleton();
       
-      if (!user) {
-        window.location.href = 'login.html';
-        return;
-      }
-      
-      userId = user.id;
-      
-      // Check if already set up
-      const { data: profile } = await sb
-        .from('profiles')
-        .select('full_name')
-        .eq('id', userId)
-        .single();
-      
-      if (profile?.full_name) {
-        // Already set up → go to main app
-        window.location.href = 'index.html';
+      try {
+        const { data: { user }, error: authError } = await sb.auth.getUser();
+        
+        if (authError || !user) {
+          // Not logged in - redirect to login
+          setTimeout(() => {
+            window.location.href = 'auth.html';
+          }, 500);
+          return;
+        }
+        
+        userId = user.id;
+        
+        // Check if already set up
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('full_name')
+          .eq('id', userId)
+          .single();
+        
+        if (profile && profile.full_name) {
+          // Already set up → go to main app
+          showToast('Welcome back! Redirecting... 👋');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 800);
+          return;
+        }
+        
+        // New user - show setup after skeleton
+        setTimeout(() => {
+          hideSkeleton();
+          showStep(1);
+        }, 1000); // Show skeleton for at least 1 second for smooth UX
+        
+      } catch (error) {
+        console.error('Auth check error:', error);
+        showToast('Connection error. Please try again.', 'error');
+        
+        // Still show setup after delay even if error
+        setTimeout(() => {
+          hideSkeleton();
+          showStep(1);
+        }, 1500);
       }
     }
 
@@ -201,7 +340,10 @@
       document.getElementById('step1').classList.add('hidden');
       document.getElementById('step2').classList.add('hidden');
       document.getElementById('step3').classList.add('hidden');
-      document.getElementById('step' + step).classList.remove('hidden');
+      
+      const stepEl = document.getElementById('step' + step);
+      stepEl.classList.remove('hidden');
+      stepEl.classList.add('fade-in');
       
       // Update dots
       document.getElementById('stepDot1').className = step >= 1 ? 'step-dot bg-[#1e293b]' : 'step-dot bg-[#e2e8f0]';
@@ -214,9 +356,11 @@
       document.getElementById('finishBtn').classList.toggle('hidden', step !== 3);
       
       // Focus input
-      if (step === 1) document.getElementById('setupName').focus();
-      if (step === 2) document.getElementById('setupBalance').focus();
-      if (step === 3) document.getElementById('setupCurrency').focus();
+      setTimeout(() => {
+        if (step === 1) document.getElementById('setupName').focus();
+        if (step === 2) document.getElementById('setupBalance').focus();
+        if (step === 3) document.getElementById('setupCurrency').focus();
+      }, 100);
       
       currentStep = step;
     }
@@ -356,7 +500,6 @@
     // INIT
     // ============================================
     checkAuth();
-    showStep(1);
   </script>
 </body>
 </html>

@@ -147,25 +147,68 @@ async function handleLogout() {
   }, 800);
 }
 
+// ✅ REPLACED: Delete Account with modal instead of confirm()
+function openDeleteAccountModal() {
+  const modal = document.getElementById('deleteAccountModal');
+  const input = document.getElementById('deleteConfirmInput');
+  const confirmBtn = document.getElementById('confirmDeleteAccountBtn');
+  
+  // Reset state
+  if (input) input.value = '';
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.className = 'flex-1 py-3 rounded-[16px] font-semibold text-sm bg-gray-300 text-gray-500 cursor-not-allowed transition-all';
+  }
+  
+  if (modal) {
+    modal.classList.remove('invisible', 'opacity-0');
+    setTimeout(() => input?.focus(), 100);
+  }
+}
+
+function closeDeleteAccountModal() {
+  const modal = document.getElementById('deleteAccountModal');
+  if (modal) modal.classList.add('invisible', 'opacity-0');
+}
+
 async function handleDeleteAccount() {
-  if (!confirm('Are you sure? This will delete ALL your data permanently.')) return;
+  const btn = document.getElementById('confirmDeleteAccountBtn');
+  if (!btn || btn.disabled) return;
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
   
   loader.deleting();
   
-  await sb.from('expenses').delete().eq('user_id', currentUser.id);
-  await sb.from('income').delete().eq('user_id', currentUser.id);
-  await sb.from('categories').delete().eq('user_id', currentUser.id);
-  await sb.from('profiles').delete().eq('id', currentUser.id);
-  
-  await sb.auth.signOut();
-  window.location.href = 'auth.html';
+  try {
+    await sb.from('expenses').delete().eq('user_id', currentUser.id);
+    await sb.from('income').delete().eq('user_id', currentUser.id);
+    await sb.from('categories').delete().eq('user_id', currentUser.id);
+    await sb.from('profiles').delete().eq('id', currentUser.id);
+    
+    await sb.auth.signOut();
+    
+    loader.hide();
+    closeDeleteAccountModal();
+    alert.success('Account deleted successfully');
+    
+    setTimeout(() => {
+      window.location.href = 'auth.html';
+    }, 1000);
+    
+  } catch (error) {
+    console.error('Delete account error:', error);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> Delete';
+    loader.hide();
+    alert.error('Failed to delete account. Please try again.');
+  }
 }
 
 // ============================================
 // ✅ TAB NAVIGATION (Fixed with chart cleanup)
 // ============================================
 function switchTab(tab) {
-  // ✅ Destroy charts when leaving stats tab
   if (tab !== 'stats') {
     destroyCharts();
   }
@@ -301,16 +344,14 @@ async function deleteExpenseFromDB(id) {
 }
 
 // ============================================
-// ✅ STATS & ANALYTICS (Fixed with proper chart cleanup)
+// ✅ STATS & ANALYTICS
 // ============================================
 async function loadStats() {
-  // ✅ Destroy existing charts first
   destroyCharts();
   
   const totalExpense = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
   const budget = parseFloat(document.getElementById('editBudget')?.value) || 0;
   
-  // Budget progress
   if (budget > 0) {
     const percent = Math.min((totalExpense / budget) * 100, 100);
     document.getElementById('statsBudgetBar').style.width = percent + '%';
@@ -332,13 +373,11 @@ async function loadStats() {
     }
   }
   
-  // Quick stats
   document.getElementById('totalTransactions').textContent = expenses.length;
   
   const daysWithExpenses = new Set(expenses.map(e => e.expense_date || e.created_at?.split('T')[0])).size || 1;
   document.getElementById('avgDailySpend').textContent = formatMoney(totalExpense / daysWithExpenses);
   
-  // This month
   const now = new Date();
   const thisMonth = expenses.filter(e => {
     const d = new Date(e.expense_date || e.created_at);
@@ -346,7 +385,6 @@ async function loadStats() {
   });
   document.getElementById('thisMonthTotal').textContent = formatMoney(thisMonth.reduce((s, e) => s + parseFloat(e.amount), 0));
   
-  // Top category
   const catTotals = {};
   expenses.forEach(e => {
     const name = e.categories?.name || 'Other';
@@ -355,20 +393,16 @@ async function loadStats() {
   const topCat = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
   document.getElementById('topCategory').textContent = topCat ? topCat[0] : '-';
   
-  // Charts
   renderCategoryChart(catTotals);
   renderWeeklyChart();
   
-  // Insights
   renderInsights(catTotals, totalExpense, budget);
 }
 
-// ✅ FIXED: Category Chart with proper destruction
 function renderCategoryChart(catTotals) {
   const ctx = document.getElementById('categoryChart')?.getContext('2d');
   if (!ctx) return;
   
-  // ✅ Destroy existing chart first
   if (categoryChart) {
     categoryChart.destroy();
     categoryChart = null;
@@ -400,12 +434,10 @@ function renderCategoryChart(catTotals) {
   });
 }
 
-// ✅ FIXED: Weekly Chart with proper destruction
 function renderWeeklyChart() {
   const ctx = document.getElementById('weeklyChart')?.getContext('2d');
   if (!ctx) return;
   
-  // ✅ Destroy existing chart first
   if (weeklyChart) {
     weeklyChart.destroy();
     weeklyChart = null;
@@ -747,7 +779,9 @@ document.getElementById('modalAmount').addEventListener('keypress', (e) => { if 
 document.getElementById('modalDescription').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddExpense(); } });
 document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
 document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-document.getElementById('deleteAccountBtn').addEventListener('click', handleDeleteAccount);
+
+// ✅ Updated: Delete Account button opens modal instead of confirm()
+document.getElementById('deleteAccountBtn').addEventListener('click', openDeleteAccountModal);
 
 // Edit expense listeners
 document.getElementById('cancelEditBtn').addEventListener('click', closeEditModal);
@@ -761,6 +795,30 @@ document.getElementById('cancelIncomeBtn').addEventListener('click', closeIncome
 document.getElementById('saveIncomeBtn').addEventListener('click', handleAddIncome);
 document.getElementById('incomeModal').addEventListener('click', function(e) { if (e.target === this) closeIncomeModal(); });
 document.getElementById('incomeAmount').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddIncome(); } });
+
+// ✅ Delete Account Modal Listeners
+document.getElementById('cancelDeleteAccountBtn')?.addEventListener('click', closeDeleteAccountModal);
+document.getElementById('confirmDeleteAccountBtn')?.addEventListener('click', handleDeleteAccount);
+document.getElementById('deleteAccountModal')?.addEventListener('click', function(e) { if (e.target === this) closeDeleteAccountModal(); });
+
+// ✅ Delete Account Input - Enable button when "DELETE" is typed
+document.getElementById('deleteConfirmInput')?.addEventListener('input', function() {
+  const confirmBtn = document.getElementById('confirmDeleteAccountBtn');
+  if (this.value === 'DELETE') {
+    confirmBtn.disabled = false;
+    confirmBtn.className = 'flex-1 py-3 rounded-[16px] font-semibold text-sm bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] transition-all shadow-lg shadow-red-200';
+  } else {
+    confirmBtn.disabled = true;
+    confirmBtn.className = 'flex-1 py-3 rounded-[16px] font-semibold text-sm bg-gray-300 text-gray-500 cursor-not-allowed transition-all';
+  }
+});
+
+// Enter key to confirm delete
+document.getElementById('deleteConfirmInput')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter' && e.target.value === 'DELETE') {
+    handleDeleteAccount();
+  }
+});
 
 // ============================================
 // HIDE/SHOW BOTTOM NAV ON SCROLL
@@ -805,7 +863,7 @@ async function safeFetch(fetchFn, fallback = null) {
 // INIT
 // ============================================
 async function init() {
-  loader.loading();
+  loader.loadingDashboard();
   
   const { data: { user } } = await sb.auth.getUser();
   if (user) {
@@ -829,8 +887,8 @@ async function init() {
   
   initScrollBehavior();
   
-  loader.hide();
+  loader.hideAll();
 }
 
-// Start the app - ONLY call init() once!
+// Start the app
 init();
