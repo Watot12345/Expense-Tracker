@@ -1,0 +1,141 @@
+name: Build & Publish Android Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    name: Build Android Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 📱 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install NPM dependencies
+        run: npm ci
+
+      - name: ⚙️ Generate Native Android Files (Expo Prebuild)
+        run: |
+          npx expo prebuild -p android --no-install
+
+      - name: 🔧 Grant execute permission for gradlew
+        run: |
+          chmod +x android/gradlew
+
+      - name: 🚀 Build Android Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: 🏷️ Determine Release Version
+        id: versioning
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_VER="${{ github.event.inputs.version }}"
+            # Ensure v prefix
+            if [[ $TAG_VER != v* ]]; then
+              TAG_VER="v$TAG_VER"
+            fi
+          else
+            TAG_VER="${{ github.ref_name }}"
+          fi
+          echo "tag=$TAG_VER" >> $GITHUB_OUTPUT
+          echo "clean_version=${TAG_VER#v}" >> $GITHUB_OUTPUT
+
+      - name: 📦 Package & Checksum Release APK
+        run: |
+          VERSION="${{ steps.versioning.outputs.tag }}"
+          APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
+          APK_DEST="PennyFlow-${VERSION}.apk"
+
+          if [ -f "$APK_SRC" ]; then
+            cp "$APK_SRC" "$APK_DEST"
+          else
+            # Fallback search for any built APK
+            FOUND_APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+            if [ -n "$FOUND_APK" ]; then
+              cp "$FOUND_APK" "$APK_DEST"
+            else
+              echo "Error: No APK found after build!"
+              exit 1
+            fi
+          fi
+
+          # Generate SHA256 checksum
+          sha256sum "$APK_DEST" > "${APK_DEST}.sha256"
+          echo "Built and verified: $APK_DEST"
+          cat "${APK_DEST}.sha256"
+
+      - name: 💾 Upload APK Artifact to Actions Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: pennyflow-android-apk
+          path: |
+            PennyFlow-*.apk
+            PennyFlow-*.apk.sha256
+          retention-days: 30
+
+      - name: 🎉 Create GitHub Release & Attach APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.versioning.outputs.tag }}
+          name: "PennyFlow ${{ steps.versioning.outputs.tag }} — Production Release"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            PennyFlow-*.apk
+            PennyFlow-*.apk.sha256
+          body: |
+            ## 🪙 PennyFlow Mobile Release (${{ steps.versioning.outputs.tag }})
+
+            ### 🚀 Highlights
+            - **Native Android Release**: Production-ready APK signed for standalone installation.
+            - **Smart Safe-to-Spend Dial**: Real-time spending control and budget burn tracking.
+            - **AI Receipt Scanner & Natural Language Parser**: Instant extraction of expenses from camera or text.
+            - **Zombie Subscription Killer**: Detect recurring price creeps and eliminate wasteful subscriptions.
+            - **Savings Goals & Gamified Celebrations**: Hit your targets with visual progress and audio/confetti feedback.
+
+            ### 📲 Installation Instructions
+            1. Download the attached **`PennyFlow-${{ steps.versioning.outputs.tag }}.apk`** file below directly to your Android device.
+            2. Tap the downloaded file in your browser or Downloads folder.
+            3. If Android prompts you, tap **Settings** and toggle **"Allow from this source"**.
+            4. Tap **Install** and launch **PennyFlow**!
+
+            ### 🔒 Integrity Checksum
+            Verify your download with SHA-256:
+            ```bash
+            sha256sum -c PennyFlow-${{ steps.versioning.outputs.tag }}.apk.sha256
+            ```
+
+            ### 🌐 Live Web Demo & GitHub Pages
+            Try the live web app in your browser:
+            👉 **[PennyFlow Web on GitHub Pages](https://${{ github.repository_owner }}.github.io/Expense-Tracker/)**

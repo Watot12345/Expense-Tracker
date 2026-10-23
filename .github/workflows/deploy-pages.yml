@@ -1,0 +1,50 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🌐 Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: 📁 Prepare Web Distribution
+        run: |
+          mkdir -p _site
+          # Copy all web assets and scripts to _site
+          cp index.html _site/
+          cp -r style.css app.js ai-assistant.js loader.js alerts.js auth.html setup.html _site/ 2>/dev/null || true
+          cp -r assets _site/ 2>/dev/null || true
+          cp -r 1.png 2.png _site/ 2>/dev/null || true
+          # Create .nojekyll so GitHub Pages serves raw assets and files correctly
+          touch _site/.nojekyll
+
+      - name: 📤 Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
