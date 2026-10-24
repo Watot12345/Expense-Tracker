@@ -33,8 +33,8 @@ jobs:
         run: |
           mkdir -p _site
           # Copy all web assets and scripts to _site
-          cp index.html _site/
-          cp -r style.css app.js ai-assistant.js loader.js alerts.js auth.html setup.html _site/ 2>/dev/null || true
+          cp index.html app.html _site/
+          cp -r privacy.html status.json style.css app.js ai-assistant.js loader.js alerts.js auth.html setup.html _site/ 2>/dev/null || true
           cp -r assets _site/ 2>/dev/null || true
           cp -r 1.png 2.png _site/ 2>/dev/null || true
           # Create .nojekyll so GitHub Pages serves raw assets and files correctly

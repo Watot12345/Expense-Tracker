@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy & Terms — PennyFlow</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --primary-light: #ecfdf5;
+      --bg: #090d16;
+      --surface: #111827;
+      --surface-border: #1f2937;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.7;
+      padding: 40px 20px;
+    }
+    .card {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .back:hover { text-decoration: underline; }
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .date {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin-bottom: 28px;
+    }
+    h2 {
+      font-family: 'Outfit', sans-serif;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      font-size: 1.25rem;
+      color: var(--primary);
+    }
+    p, li {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+      margin-bottom: 12px;
+    }
+    ul { padding-left: 20px; margin-bottom: 16px; }
+    .badge {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a href="index.html" class="back">← Back to PennyFlow Home</a>
+    <br>
+    <span class="badge">Privacy First & Open Source</span>
+    <h1>Privacy Policy & Terms of Service</h1>
+    <div class="date">Effective Date: October 24, 2026 • Version 1.0.0</div>
+
+    <h2>1. Overview & Commitment</h2>
+    <p>PennyFlow ("we", "our", or "the app") is a 100% free, open-source personal expense tracker and AI financial coaching tool developed by Joshua Sierra. We respect your digital privacy. This policy outlines how data is handled across both the standalone Android APK and Web application.</p>
+
+    <h2>2. Local-First Data Storage</h2>
+    <p>PennyFlow operates under a <strong>Local-First</strong> paradigm:</p>
+    <ul>
+      <li>In offline or demo mode, all transactions, categories, budgets, and personal logs reside exclusively on your device (in local storage or on-device SQLite database).</li>
+      <li>We do not track, profile, monetize, or sell your personal financial records to advertising networks or third parties.</li>
+    </ul>
+
+    <h2>3. Cloud Sync & Account Features (Optional)</h2>
+    <p>If you choose to enable cloud authentication via Supabase:</p>
+    <ul>
+      <li>Your email and encrypted authentication token are stored securely by Supabase.</li>
+      <li>Row Level Security (RLS) is enforced on all database tables so only your authenticated user account can read or write your transactions.</li>
+      <li>You can delete your account and all associated cloud records at any time.</li>
+    </ul>
+
+    <h2>4. AI Financial Coach & Receipt Scanner</h2>
+    <p>When using the "Penny" AI Financial Coach or the Receipt Scanner:</p>
+    <ul>
+      <li>Receipt images and transaction summaries analyzed by the AI engine are processed ephemerally solely to parse amounts, merchant names, and financial coaching prompts.</li>
+      <li>No financial account numbers, credit card numbers, or government IDs should be scanned or submitted.</li>
+    </ul>
+
+    <h2>5. Non-Fiscal Disclaimer</h2>
+    <p>PennyFlow is intended solely as an entertaining, educational personal expense log and lifestyle budgeting companion. It does not provide certified financial, tax, legal, or investment advice.</p>
+
+    <h2>6. Open Source License</h2>
+    <p>PennyFlow is licensed under the MIT License. Source code is openly auditable on GitHub at <a href="https://github.com/Watot12345/Expense-Tracker" style="color: var(--primary);" target="_blank" rel="noopener">Watot12345/Expense-Tracker</a>.</p>
+
+    <h2>7. Developer Contact</h2>
+    <p>If you have any questions or suggestions, please contact the developer:</p>
+    <p><strong>Joshua Sierra</strong><br>
+    Website: <a href="https://joshuasierra.vercel.app" style="color: var(--primary);" target="_blank" rel="noopener">joshuasierra.vercel.app</a><br>
+    GitHub: <a href="https://github.com/Watot12345" style="color: var(--primary);" target="_blank" rel="noopener">@Watot12345</a></p>
+  </div>
+</body>
+</html>

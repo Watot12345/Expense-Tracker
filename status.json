@@ -1,0 +1,16 @@
+{
+  "latest_version": "1.0.0",
+  "min_required_version": "1.0.0",
+  "force_update": false,
+  "download_url": "https://github.com/Watot12345/Expense-Tracker/releases/latest/download/PennyFlow-v1.0.0.apk",
+  "web_app_url": "https://watot12345.github.io/Expense-Tracker/app.html",
+  "maintenance_mode": false,
+  "maintenance_title": "Scheduled Maintenance",
+  "maintenance_message": "PennyFlow is temporarily undergoing maintenance. Your local financial records and offline data remain completely safe on your device.",
+  "announcement": {
+    "id": "v1.0.0-production",
+    "active": true,
+    "title": "🪙 PennyFlow v1.0.0 is Live!",
+    "message": "Welcome to PennyFlow! Enjoy smart AI budgeting coach, real-time daily safe-to-spend dials, laser receipt OCR, and zombie subscription killer."
+  }
+}
