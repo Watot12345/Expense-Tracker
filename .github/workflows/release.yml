@@ -32,6 +32,8 @@ jobs:
 
       - name: 📱 Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
 
       - name: 🟢 Setup Node.js 20
         uses: actions/setup-node@v4
@@ -40,7 +42,7 @@ jobs:
           cache: 'npm'
 
       - name: 📦 Install NPM dependencies
-        run: npm ci
+        run: npm ci || npm install
 
       - name: ⚙️ Generate Native Android Files (Expo Prebuild)
         run: |
