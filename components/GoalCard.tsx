@@ -1,13 +1,56 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { Target, Plus, Trash2, CheckCircle2 } from 'lucide-react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import {
+  Target,
+  Trash2,
+  CheckCircle2,
+  Palmtree,
+  Smartphone,
+  Car,
+  Home,
+  Plane,
+  Laptop,
+  GraduationCap,
+  Gem,
+  Gamepad2,
+  Bike,
+} from 'lucide-react-native';
 import { Goal } from '@/types/expense';
 import { formatCurrency } from '@/lib/pennyAI';
 import { useTheme } from '@/hooks/useTheme';
+import { AnimatedProgressBar } from '@/components/AnimatedPrimitives';
+
+export function renderGoalIcon(iconName: string | undefined, color: string, size: number = 20) {
+  switch (iconName) {
+    case 'Palmtree':
+      return <Palmtree size={size} color={color} />;
+    case 'Smartphone':
+      return <Smartphone size={size} color={color} />;
+    case 'Car':
+      return <Car size={size} color={color} />;
+    case 'Home':
+      return <Home size={size} color={color} />;
+    case 'Plane':
+      return <Plane size={size} color={color} />;
+    case 'Laptop':
+      return <Laptop size={size} color={color} />;
+    case 'GraduationCap':
+      return <GraduationCap size={size} color={color} />;
+    case 'Gem':
+      return <Gem size={size} color={color} />;
+    case 'Gamepad2':
+      return <Gamepad2 size={size} color={color} />;
+    case 'Bike':
+      return <Bike size={size} color={color} />;
+    default:
+      return <Target size={size} color={color} />;
+  }
+}
 
 interface GoalCardProps {
   goal: Goal;
   currency?: string;
+  index?: number;
   onAddFunds: (id: string, amount: number) => void;
   onDelete: (id: string) => void;
   onCompleted?: () => void;
@@ -33,55 +76,79 @@ export const GoalCard: React.FC<GoalCardProps> = ({
 
   return (
     <View
-      style={{
-        backgroundColor: isDark ? 'rgba(30, 41, 59, 0.5)' : '#FFFFFF',
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.9)',
-      }}
-      className="p-5 mb-4 rounded-3xl border shadow-sm"
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: isFinished ? 'rgba(16, 185, 129, 0.4)' : colors.border,
+        },
+      ]}
     >
       {/* Top Header */}
-      <View className="flex-row items-center justify-between mb-3">
-        <View className="flex-row items-center space-x-2.5 flex-1">
-          <View className="w-10 h-10 rounded-2xl bg-indigo-500/20 items-center justify-center">
-            <Text className="text-lg">{goal.icon || '🎯'}</Text>
+      <View style={styles.headerRow}>
+        <View style={styles.leftRow}>
+          <View
+            style={[
+              styles.iconBox,
+              {
+                backgroundColor: isFinished
+                  ? 'rgba(16, 185, 129, 0.16)'
+                  : 'rgba(99, 102, 241, 0.14)',
+              },
+            ]}
+          >
+            {renderGoalIcon(goal.icon, isFinished ? '#10B981' : '#6366F1', 20)}
           </View>
-          <View className="flex-1 ml-2">
-            <Text style={{ color: colors.text }} className="text-base font-bold tracking-tight">
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.titleText, { color: colors.text }]}>
               {goal.title}
             </Text>
             {goal.target_date ? (
-              <Text style={{ color: colors.muted }} className="text-xs">
+              <Text style={[styles.dateText, { color: colors.muted }]}>
                 Target: {new Date(goal.target_date).toLocaleDateString()}
               </Text>
             ) : null}
           </View>
         </View>
 
-        <Pressable onPress={() => onDelete(goal.id)} className="p-2" hitSlop={8}>
-          <Trash2 size={16} color={colors.muted} />
+        <Pressable
+          onPress={() => onDelete(goal.id)}
+          style={styles.deleteBtn}
+          hitSlop={8}
+          accessibilityLabel="Delete goal"
+        >
+          <Trash2 size={15} color={colors.muted} />
         </Pressable>
       </View>
 
       {/* Progress Numbers */}
-      <View className="flex-row justify-between items-baseline mb-2">
-        <View className="flex-row items-baseline space-x-1">
-          <Text style={{ color: colors.text }} className="text-2xl font-black">
+      <View style={styles.numbersRow}>
+        <View style={styles.baselineRow}>
+          <Text style={[styles.currentText, { color: colors.text }]}>
             {formatCurrency(goal.current, currency)}
           </Text>
-          <Text style={{ color: colors.muted }} className="text-xs">
+          <Text style={[styles.targetText, { color: colors.muted }]}>
             / {formatCurrency(goal.target, currency)}
           </Text>
         </View>
         <View
-          style={{
-            backgroundColor: isFinished ? 'rgba(16, 185, 129, 0.2)' : 'rgba(99, 102, 241, 0.15)',
-          }}
-          className="px-2.5 py-1 rounded-full flex-row items-center space-x-1"
+          style={[
+            styles.pctBadge,
+            {
+              backgroundColor: isFinished
+                ? 'rgba(16, 185, 129, 0.18)'
+                : 'rgba(99, 102, 241, 0.15)',
+            },
+          ]}
         >
-          {isFinished ? <CheckCircle2 size={12} color="#10B981" /> : null}
+          {isFinished ? (
+            <CheckCircle2 size={12} color="#10B981" style={{ marginRight: 4 }} />
+          ) : null}
           <Text
-            style={{ color: isFinished ? '#10B981' : '#6366F1' }}
-            className="text-xs font-bold"
+            style={[
+              styles.pctText,
+              { color: isFinished ? '#10B981' : '#6366F1' },
+            ]}
           >
             {percentage}%
           </Text>
@@ -89,43 +156,158 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       </View>
 
       {/* Progress Bar */}
-      <View className="w-full h-2.5 rounded-full bg-slate-700/30 overflow-hidden mb-4">
-        <View
-          style={{
-            width: `${percentage}%`,
-            backgroundColor: isFinished ? '#10B981' : '#6366F1',
-          }}
-          className="h-full rounded-full"
+      <View style={{ marginBottom: 14 }}>
+        <AnimatedProgressBar
+          progress={percentage}
+          color={isFinished ? '#10B981' : '#6366F1'}
+          trackColor={isDark ? 'rgba(148, 163, 184, 0.16)' : '#E2E8F0'}
+          height={10}
         />
       </View>
 
       {/* Quick Fund Buttons */}
       {!isFinished ? (
-        <View className="flex-row items-center space-x-2 pt-1 border-t border-slate-700/20">
-          <Text style={{ color: colors.muted }} className="text-xs font-medium mr-1">
-            Quick Add:
-          </Text>
+        <View style={styles.fundRow}>
+          <Text style={[styles.fundLabel, { color: colors.muted }]}>Quick Add:</Text>
           {[10, 25, 50].map((amt) => (
             <Pressable
               key={amt}
               onPress={() => handleFund(amt)}
-              style={{
-                backgroundColor: isDark ? 'rgba(51, 65, 85, 0.6)' : 'rgba(241, 245, 249, 0.9)',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(203, 213, 225, 0.8)',
-              }}
-              className="flex-1 py-2 rounded-xl border items-center justify-center active:scale-95"
+              style={[
+                styles.fundBtn,
+                {
+                  backgroundColor: isDark ? '#162033' : '#F1F5F9',
+                  borderColor: colors.border,
+                },
+              ]}
             >
-              <Text style={{ color: colors.text }} className="text-xs font-bold">
+              <Text style={[styles.fundBtnText, { color: colors.text }]}>
                 +{formatCurrency(amt, currency)}
               </Text>
             </Pressable>
           ))}
         </View>
       ) : (
-        <View className="py-1.5 px-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 items-center">
-          <Text className="text-xs font-bold text-emerald-400">🎉 Goal Achieved!</Text>
+        <View style={styles.achievedBanner}>
+          <CheckCircle2 size={14} color="#10B981" />
+          <Text style={styles.achievedText}>Goal Achieved</Text>
         </View>
       )}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    padding: 18,
+    marginBottom: 14,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  leftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  titleText: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  dateText: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  deleteBtn: {
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(148, 163, 184, 0.12)',
+  },
+  numbersRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 10,
+  },
+  baselineRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  currentText: {
+    fontSize: 22,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  targetText: {
+    fontSize: 12,
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  pctBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pctText: {
+    fontSize: 11,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  fundRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(148, 163, 184, 0.15)',
+    gap: 8,
+  },
+  fundLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  fundBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 11,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fundBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  achievedBanner: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  achievedText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#10B981',
+    marginLeft: 6,
+  },
+});

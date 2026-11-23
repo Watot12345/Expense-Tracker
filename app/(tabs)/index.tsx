@@ -25,8 +25,11 @@ import { ProPaywallModal } from '@/components/ProPaywallModal';
 import { AffiliateMarketplaceCard } from '@/components/AffiliateMarketplaceCard';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SafeToSpendDial } from '@/components/SafeToSpendDial';
+import { PennyFlowLogo } from '@/components/PennyFlowLogo';
+import { PhoneHomeWidget } from '@/components/PhoneHomeWidget';
 import { exportExpensesCSV } from '@/lib/csvExport';
 import { calculateSafeToSpend } from '@/lib/safeToSpend';
+import { getCurrencySymbol } from '@/lib/pennyAI';
 import { Expense } from '@/types/expense';
 
 function getDateGroup(dateStr?: string): 'Today' | 'Yesterday' | 'Earlier' {
@@ -206,39 +209,54 @@ export default function HomeScreen() {
 
   const renderHeader = () => (
     <View>
-      {/* Top Header */}
-      <View className="flex-row justify-between items-center mt-2 mb-5">
-        <View>
-          <Text style={{ color: colors.text }} className="text-2xl font-black tracking-tight">
-            Hey, {userName} 👋
-          </Text>
-          <Text style={{ color: colors.muted }} className="text-xs font-medium mt-0.5">
-            Keep your spending smart
-          </Text>
+      {/* Top Brand & Greeting Header */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 8,
+          marginBottom: 18,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <PennyFlowLogo size={40} animated />
+          <View style={{ marginLeft: 12 }}>
+            <Text style={{ color: colors.text, fontSize: 19, fontWeight: '900', letterSpacing: -0.4 }}>
+              Hey, {userName}
+            </Text>
+            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '600' }}>
+              Penny<Text style={{ color: '#10B981', fontWeight: '800' }}>Flow</Text> · Smart spending
+            </Text>
+          </View>
         </View>
 
-        <View className="flex-row items-center space-x-2">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {/* Pro Upgrade / Active Badge */}
           <Pressable
             onPress={() => setPaywallVisible(true)}
-            className="flex-row items-center px-3 py-1.5 rounded-full active:opacity-75"
             style={{
-              backgroundColor: isPro ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 14,
+              backgroundColor: isPro ? 'rgba(245, 158, 11, 0.14)' : 'rgba(99, 102, 241, 0.14)',
               borderWidth: 1,
-              borderColor: isPro ? 'rgba(245, 158, 11, 0.4)' : 'rgba(99, 102, 241, 0.4)',
+              borderColor: isPro ? 'rgba(245, 158, 11, 0.38)' : 'rgba(99, 102, 241, 0.35)',
             }}
           >
             {isPro ? (
               <>
                 <Crown size={14} color="#F59E0B" />
-                <Text className="text-[11px] font-black text-amber-500 ml-1 uppercase tracking-wider">
+                <Text style={{ fontSize: 11, fontWeight: '900', color: '#F59E0B', marginLeft: 4 }}>
                   PRO
                 </Text>
               </>
             ) : (
               <>
                 <Sparkles size={14} color="#6366F1" />
-                <Text className="text-[11px] font-bold text-indigo-500 ml-1">
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#6366F1', marginLeft: 4 }}>
                   Upgrade
                 </Text>
               </>
@@ -248,9 +266,6 @@ export default function HomeScreen() {
           <ThemeToggle />
         </View>
       </View>
-
-      {/* Safe to Spend Today Dial */}
-      <SafeToSpendDial data={safeToSpendData} currency={currency} />
 
       {/* Balance Card */}
       <BalanceCard
@@ -268,10 +283,31 @@ export default function HomeScreen() {
         onExportCSV={() => exportExpensesCSV(expenses)}
       />
 
+      {/* Safe to Spend Today Bar */}
+      <SafeToSpendDial data={safeToSpendData} currency={currency} />
+
+      {/* 1-Tap Phone Widget & Home Screen Widget Preview */}
+      <PhoneHomeWidget
+        safeToSpend={safeToSpendData}
+        balance={balance}
+        todaySpent={todaySpendSoFar}
+        currency={currency}
+        onQuickExpense={handleQuickAdd}
+        onOpenCustomExpense={() => {
+          setEditingExpense(null);
+          setExpenseModalVisible(true);
+        }}
+        onOpenScanner={handleOpenReceiptScanner}
+      />
+
       {/* Natural Language Quick Add Bar + AI Receipt Scanner */}
       <QuickAddBar
         onAdd={handleQuickAdd}
         onOpenScanner={handleOpenReceiptScanner}
+        onOpenModal={() => {
+          setEditingExpense(null);
+          setExpenseModalVisible(true);
+        }}
         currency={currency}
       />
 
@@ -400,6 +436,7 @@ export default function HomeScreen() {
         <TransactionRow
           expense={item}
           currency={currency}
+          index={index}
           onEdit={(item) => {
             setEditingExpense(item);
             setExpenseModalVisible(true);
@@ -437,7 +474,12 @@ export default function HomeScreen() {
     if (loading) return null;
     return (
       <View className="py-12 items-center justify-center">
-        <Text className="text-4xl mb-2">💸</Text>
+        <View
+          style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+          className="w-14 h-14 rounded-2xl border items-center justify-center mb-3"
+        >
+          <PlusCircle size={26} color={colors.muted} />
+        </View>
         <Text style={{ color: colors.muted }} className="text-sm font-semibold">
           No expenses found
         </Text>
@@ -462,7 +504,7 @@ export default function HomeScreen() {
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor="#6366F1" />
         }
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 116 }}
         showsVerticalScrollIndicator={false}
       />
 
@@ -471,6 +513,7 @@ export default function HomeScreen() {
         visible={expenseModalVisible}
         categories={categories}
         initialData={editingExpense}
+        currencySymbol={getCurrencySymbol(currency)}
         onClose={() => {
           setExpenseModalVisible(false);
           setEditingExpense(null);
@@ -481,7 +524,7 @@ export default function HomeScreen() {
       {/* AI Vision Receipt Scanner Modal */}
       <ReceiptScannerModal
         visible={scannerModalVisible}
-        currencySymbol={currency === 'USD' ? '$' : currency}
+        currencySymbol={getCurrencySymbol(currency)}
         onClose={() => setScannerModalVisible(false)}
         onSaveExpense={async ({ amount, category, description, date, receipt_url }) => {
           const matchedCategory = categories.find(
@@ -529,7 +572,7 @@ export default function HomeScreen() {
       <ConnectedAccountsModal
         visible={bankModalVisible}
         accounts={connectedAccounts}
-        currencySymbol={currency === 'USD' ? '$' : currency}
+        currencySymbol={getCurrencySymbol(currency)}
         isPro={isPro}
         onClose={() => setBankModalVisible(false)}
         onLinkAccount={linkAccount}
@@ -577,7 +620,7 @@ export default function HomeScreen() {
 
             <View className="mb-4">
               <Text style={{ color: colors.muted }} className="text-xs font-semibold mb-2">
-                Amount ({currency})
+                Amount ({getCurrencySymbol(currency)})
               </Text>
               <TextInput
                 value={incomeAmount}
@@ -618,7 +661,7 @@ export default function HomeScreen() {
                         fontSize: 12,
                       }}
                     >
-                      +${amt >= 1000 ? `${amt / 1000}k` : amt}
+                      +{getCurrencySymbol(currency)}{amt >= 1000 ? `${amt / 1000}k` : amt}
                     </Text>
                   </Pressable>
                 );

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase, getDemoUser, clearDemoUser } from '@/lib/supabase';
+import { supabase, getDemoUser, clearDemoUser, DEMO_USER } from '@/lib/supabase';
 import { Expense, Category, Goal, UserProfile, Subscription, ConnectedAccount, ExternalSyncResult } from '@/types/expense';
 import {
   fetchConnectedAccounts,
@@ -22,6 +22,18 @@ const EXPENSES_STORAGE_KEY = 'penny_expenses';
 const INCOME_STORAGE_KEY = 'penny_income';
 const USAGE_STATS_KEY = 'penny_usage_stats';
 export const PAGE_SIZE = 20;
+
+// Cross-tab state sync broadcaster so updating currency/profile/expenses in one tab
+// immediately updates all other mounted tabs without requiring a page reload.
+type SyncListener = () => void;
+const syncListeners = new Set<SyncListener>();
+function notifySupabaseSync() {
+  syncListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {}
+  });
+}
 
 export interface FinancialHealth {
   balance: number;
@@ -196,18 +208,21 @@ export function useSupabase() {
         console.warn('RPC health call bypassed:', e);
       }
 
-      // 1. Profile
+      // 1. Profile (Prioritize locally persisted profile in Demo Mode so custom currency is preserved)
       let loadedProfile: UserProfile | null = null;
-      try {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentUser.id)
-          .single();
-        if (profileData) {
-          loadedProfile = profileData;
-        }
-      } catch {}
+      const isDemoUser = currentUser.id === DEMO_USER.id;
+      if (!isDemoUser) {
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+          if (profileData) {
+            loadedProfile = profileData;
+          }
+        } catch {}
+      }
       if (!loadedProfile) {
         const savedProf = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
         if (savedProf) {
@@ -380,8 +395,29 @@ export function useSupabase() {
       }
     });
 
+    const handleCrossTabSync = async () => {
+      try {
+        const [savedProf, savedExp, savedInc, savedGoals, savedSubs] = await Promise.all([
+          AsyncStorage.getItem(PROFILE_STORAGE_KEY),
+          AsyncStorage.getItem(EXPENSES_STORAGE_KEY),
+          AsyncStorage.getItem(INCOME_STORAGE_KEY),
+          AsyncStorage.getItem(GOALS_STORAGE_KEY),
+          AsyncStorage.getItem(SUBSCRIPTIONS_STORAGE_KEY),
+        ]);
+        if (savedProf) setProfile(JSON.parse(savedProf));
+        if (savedExp) setExpenses(JSON.parse(savedExp));
+        if (savedInc) setIncomeTotal(parseFloat(savedInc) || 0);
+        if (savedGoals) setGoals(JSON.parse(savedGoals));
+        if (savedSubs) setSubscriptions(JSON.parse(savedSubs));
+        setFinancialHealth(null);
+      } catch {}
+    };
+
+    syncListeners.add(handleCrossTabSync);
+
     return () => {
       subscription.unsubscribe();
+      syncListeners.delete(handleCrossTabSync);
     };
   }, [fetchData]);
 
@@ -395,14 +431,15 @@ export function useSupabase() {
     external_id?: string | null;
     account_id?: string | null;
   }) => {
-    if (!user) return false;
+    const activeUser = user || DEMO_USER;
+    const isDemo = activeUser.id === DEMO_USER.id;
     const matchedCategory = categories.find((c) => c.id === expense.category_id);
     const newEntry = {
       id: Date.now().toString(),
       amount: expense.amount,
       category_id: expense.category_id,
       description: expense.description,
-      user_id: user.id,
+      user_id: activeUser.id,
       expense_date: expense.expense_date || new Date().toISOString(),
       receipt_url: expense.receipt_url || null,
       external_id: expense.external_id || null,
@@ -412,64 +449,76 @@ export function useSupabase() {
         : { name: 'Other', icon: 'CreditCard', color: '#6366F1' },
     };
 
-    try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .insert([{
-          amount: newEntry.amount,
-          category_id: newEntry.category_id,
-          description: newEntry.description,
-          expense_date: newEntry.expense_date,
-          user_id: user.id,
-          receipt_url: newEntry.receipt_url,
-          external_id: newEntry.external_id,
-          account_id: newEntry.account_id,
-        }])
-        .select('*, categories(name, icon, color)');
-      if (!error && data && data[0]) {
-        setExpenses((prev) => [data[0], ...prev]);
-        return true;
-      }
-    } catch {}
+    if (!isDemo) {
+      try {
+        const { data, error } = await supabase
+          .from('expenses')
+          .insert([{
+            amount: newEntry.amount,
+            category_id: newEntry.category_id,
+            description: newEntry.description,
+            expense_date: newEntry.expense_date,
+            user_id: activeUser.id,
+            receipt_url: newEntry.receipt_url,
+            external_id: newEntry.external_id,
+            account_id: newEntry.account_id,
+          }])
+          .select('*, categories(name, icon, color)');
+        if (!error && data && data[0]) {
+          setFinancialHealth(null);
+          const next = [data[0], ...expenses];
+          setExpenses(next);
+          await AsyncStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(next));
+          notifySupabaseSync();
+          return true;
+        }
+      } catch {}
+    }
 
-    setExpenses((prev) => {
-      const next = [newEntry, ...prev];
-      AsyncStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+    setFinancialHealth(null);
+    const next = [newEntry, ...expenses];
+    setExpenses(next);
+    await AsyncStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(next));
+    notifySupabaseSync();
     return true;
   };
 
   const deleteExpense = async (id: string) => {
-    try {
-      await supabase.from('expenses').delete().eq('id', id);
-    } catch {}
-    setExpenses((prev) => {
-      const next = prev.filter((item) => item.id !== id);
-      AsyncStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+    const isDemo = !user || user.id === DEMO_USER.id;
+    if (!isDemo) {
+      try {
+        await supabase.from('expenses').delete().eq('id', id);
+      } catch {}
+    }
+    setFinancialHealth(null);
+    const next = expenses.filter((item) => item.id !== id);
+    setExpenses(next);
+    await AsyncStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(next));
+    notifySupabaseSync();
     return true;
   };
 
   const addIncome = async (amount: number, source: string, frequency: string = 'one-time') => {
-    if (!user) return false;
-    try {
-      await supabase.from('income').insert([
-        {
-          user_id: user.id,
-          amount,
-          source,
-          frequency,
-          income_date: new Date().toISOString(),
-        },
-      ]);
-    } catch {}
-    setIncomeTotal((prev) => {
-      const next = prev + amount;
-      AsyncStorage.setItem(INCOME_STORAGE_KEY, next.toString());
-      return next;
-    });
+    const activeUser = user || DEMO_USER;
+    const isDemo = activeUser.id === DEMO_USER.id;
+    if (!isDemo) {
+      try {
+        await supabase.from('income').insert([
+          {
+            user_id: activeUser.id,
+            amount,
+            source,
+            frequency,
+            income_date: new Date().toISOString(),
+          },
+        ]);
+      } catch {}
+    }
+    setFinancialHealth(null);
+    const next = incomeTotal + amount;
+    setIncomeTotal(next);
+    await AsyncStorage.setItem(INCOME_STORAGE_KEY, next.toString());
+    notifySupabaseSync();
     return true;
   };
 
@@ -486,11 +535,13 @@ export function useSupabase() {
       updated = [newGoal, ...goals];
     }
     await saveGoalsToStorage(updated);
+    notifySupabaseSync();
   };
 
   const deleteGoal = async (id: string) => {
     const updated = goals.filter((g) => g.id !== id);
     await saveGoalsToStorage(updated);
+    notifySupabaseSync();
   };
 
   const addFundsToGoal = async (id: string, amount: number) => {
@@ -501,18 +552,33 @@ export function useSupabase() {
       return g;
     });
     await saveGoalsToStorage(updated);
+    notifySupabaseSync();
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user) return false;
-    try {
-      await supabase.from('profiles').update(updates).eq('id', user.id);
-    } catch {}
-    setProfile((prev) => {
-      const next = prev ? { ...prev, ...updates } : null;
-      if (next) AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+    const activeUser = user || DEMO_USER;
+    const isDemo = activeUser.id === DEMO_USER.id;
+    const baseProfile: UserProfile = profile || {
+      id: activeUser.id,
+      full_name: activeUser.user_metadata?.full_name || 'Jordan Vance',
+      currency: 'USD',
+      monthly_budget: 3500,
+    };
+    const nextProfile: UserProfile = {
+      ...baseProfile,
+      ...updates,
+      currency: (updates.currency ?? baseProfile.currency ?? 'USD').trim() || 'USD',
+    };
+
+    setProfile(nextProfile);
+    await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(nextProfile));
+    notifySupabaseSync();
+
+    if (!isDemo) {
+      try {
+        await supabase.from('profiles').update(updates).eq('id', activeUser.id);
+      } catch {}
+    }
     return true;
   };
 

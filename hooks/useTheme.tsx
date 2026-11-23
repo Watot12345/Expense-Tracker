@@ -13,6 +13,9 @@ interface ThemeContextType {
     bg: string;
     card: string;
     surface: string;
+    surfaceElevated: string;
+    glassBg: string;
+    glassBorder: string;
     border: string;
     text: string;
     muted: string;
@@ -27,9 +30,12 @@ interface ThemeContextType {
 const THEME_STORAGE_KEY = '@pennyflow_theme';
 
 const darkColors = {
-  bg: '#090D16',
-  card: '#111827',
-  surface: '#1E293B',
+  bg: '#070B14',
+  card: '#101726',
+  surface: '#162033',
+  surfaceElevated: '#1C2840',
+  glassBg: 'rgba(16, 23, 38, 0.78)',
+  glassBorder: 'rgba(255, 255, 255, 0.09)',
   border: 'rgba(255, 255, 255, 0.08)',
   text: '#F8FAFC',
   muted: '#94A3B8',
@@ -41,17 +47,20 @@ const darkColors = {
 };
 
 const lightColors = {
-  bg: '#F8FAFC',
+  bg: '#F4F6FA',
   card: '#FFFFFF',
-  surface: '#F1F5F9',
-  border: 'rgba(226, 232, 240, 0.8)',
+  surface: '#EEF2F8',
+  surfaceElevated: '#FFFFFF',
+  glassBg: 'rgba(255, 255, 255, 0.88)',
+  glassBorder: 'rgba(15, 23, 42, 0.07)',
+  border: 'rgba(226, 232, 240, 0.85)',
   text: '#0F172A',
   muted: '#64748B',
   primary: '#6366F1',
   accent: '#8B5CF6',
-  emerald: '#10B981',
-  rose: '#F43F5E',
-  amber: '#F59E0B',
+  emerald: '#059669',
+  rose: '#E11D48',
+  amber: '#D97706',
 };
 
 const ThemeContext = createContext<ThemeContextType>({

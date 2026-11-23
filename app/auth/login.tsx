@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Coins, Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react-native';
 import { supabase, loginAsDemoUser } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
+import { PennyFlowLogo } from '@/components/PennyFlowLogo';
+import { FadeInCard } from '@/components/AnimatedPrimitives';
 
 export default function LoginScreen() {
   const { colors, isDark } = useTheme();
@@ -92,28 +94,27 @@ export default function LoginScreen() {
       >
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
           {/* Logo & Branding */}
-          <View className="items-center mb-8">
-            <View className="w-16 h-16 rounded-3xl bg-indigo-600 items-center justify-center shadow-lg shadow-indigo-500/30 mb-4">
-              <Coins size={32} color="#FFFFFF" />
-            </View>
-            <Text style={{ color: colors.text }} className="text-3xl font-black tracking-tight">
-              PennyFlow
+          <FadeInCard index={0} className="items-center mb-8">
+            <PennyFlowLogo size={76} animated />
+            <Text style={{ color: colors.text }} className="text-3xl font-black tracking-tight mt-4">
+              Penny<Text style={{ color: '#10B981' }}>Flow</Text>
             </Text>
             <Text style={{ color: colors.muted }} className="text-sm font-medium mt-1">
-              Smart spending, simple life
+              Smart spending, effortless clarity
             </Text>
-          </View>
+          </FadeInCard>
 
           {/* Form Card */}
+          <FadeInCard index={1}>
           <View
             style={{
-              backgroundColor: isDark ? 'rgba(17, 24, 39, 0.8)' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.8)',
+              backgroundColor: colors.card,
+              borderColor: colors.border,
             }}
-            className="p-6 rounded-[32px] border shadow-xl"
+            className="p-6 rounded-3xl border shadow-lg"
           >
             <Text style={{ color: colors.text }} className="text-xl font-bold mb-5">
-              {isRegister ? 'Create Account ✨' : 'Welcome back 👋'}
+              {isRegister ? 'Create Account' : 'Welcome back'}
             </Text>
 
             {isRegister ? (
@@ -261,6 +262,7 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
           </View>
+          </FadeInCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

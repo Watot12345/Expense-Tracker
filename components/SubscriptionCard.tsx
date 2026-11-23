@@ -125,7 +125,7 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
       {isZombie ? (
         <View className="mt-2.5 px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/30 flex-row items-center justify-between">
           <View className="flex-row items-center flex-1 mr-2">
-            <Text className="text-xs">🧟</Text>
+            <AlertTriangle size={13} color="#A855F7" />
             <Text className="text-[11px] text-purple-400 font-bold ml-1.5 flex-1">
               Zombie Alert: Untouched for 60+ days.
             </Text>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Repeat, Plus } from 'lucide-react-native';
+import { Repeat, Plus, AlertTriangle } from 'lucide-react-native';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useTheme } from '@/hooks/useTheme';
 import { SubscriptionBurnSummary } from '@/components/SubscriptionBurnSummary';
@@ -58,13 +58,13 @@ export default function SubscriptionsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'left', 'right']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 116 }}
       >
         {/* Header */}
         <View className="flex-row justify-between items-center mt-2 mb-5">
           <View>
             <Text style={{ color: colors.text }} className="text-2xl font-black tracking-tight">
-              Subscriptions 🔁
+              Subscriptions
             </Text>
             <Text style={{ color: colors.muted }} className="text-xs font-medium mt-0.5">
               Audit and track your recurring monthly commitments
@@ -90,7 +90,7 @@ export default function SubscriptionsScreen() {
           >
             <View className="flex-row items-center justify-between mb-1.5">
               <View className="flex-row items-center">
-                <Text className="text-sm mr-1.5">🧟</Text>
+                <AlertTriangle size={14} color="#A855F7" style={{ marginRight: 6 }} />
                 <Text className="text-xs font-black text-purple-400 uppercase tracking-wider">
                   Zombie & Price Radar Alert
                 </Text>

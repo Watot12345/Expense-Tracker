@@ -310,7 +310,7 @@ export const ProPaywallModal: React.FC<ProPaywallModalProps> = ({
                 >
                   <Crown size={14} color="#F59E0B" />
                   <Text className="text-amber-500 text-xs font-bold">
-                    🧪 Dev Test: Toggle Pro Status ({isPro ? 'Active' : 'Free'})
+                    Dev Test: Toggle Pro Status ({isPro ? 'Active' : 'Free'})
                   </Text>
                 </Pressable>
               </View>

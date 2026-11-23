@@ -80,7 +80,7 @@ export const ConnectedAccountsModal: React.FC<ConnectedAccountsModalProps> = ({
       const res = await onSyncAccount(account);
       if (res.importedCount > 0) {
         setSyncResultBanner(
-          `✨ ${res.importedCount} new transaction(s) imported & categorized by Gemini AI!`
+          `${res.importedCount} new transaction(s) imported & categorized by Gemini AI!`
         );
       } else {
         setSyncResultBanner('✓ Up to date. Zero duplicates found.');

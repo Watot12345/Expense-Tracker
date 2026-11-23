@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import {
   Utensils,
   Car,
@@ -18,6 +18,7 @@ import { useTheme } from '@/hooks/useTheme';
 interface TransactionRowProps {
   expense: Expense;
   currency?: string;
+  index?: number;
   onEdit?: (expense: Expense) => void;
   onDelete?: (id: string) => void;
 }
@@ -28,11 +29,10 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const categoryName = expense.categories?.name || 'Other';
   const meta = CATEGORY_META[categoryName] || CATEGORY_META.Other;
 
-  // Render Category Icon
   const renderCategoryIcon = () => {
     const iconProps = { size: 18, color: meta.color };
     switch (categoryName) {
@@ -53,52 +53,71 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
     }
   };
 
-  const formattedDate = expense.expense_date || expense.created_at
-    ? new Date(expense.expense_date || expense.created_at!).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })
-    : '';
+  const formattedDate =
+    expense.expense_date || expense.created_at
+      ? new Date(expense.expense_date || expense.created_at!).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        })
+      : '';
+
+  const primaryTitle = expense.description?.trim() ? expense.description : categoryName;
 
   return (
     <View
-      style={{
-        backgroundColor: isDark ? 'rgba(30, 41, 59, 0.4)' : '#FFFFFF',
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(226, 232, 240, 0.7)',
-      }}
-      className="flex-row items-center justify-between p-3.5 mb-2.5 rounded-2xl border"
+      style={[
+        styles.rowCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+      ]}
     >
-      {/* Category Avatar & Info */}
-      <View className="flex-row items-center flex-1 mr-2">
+      {/* Left: Category Icon & Details */}
+      <View style={styles.leftSection}>
         <View
-          style={{ backgroundColor: meta.bg }}
-          className="w-11 h-11 rounded-2xl items-center justify-center mr-3"
+          style={[
+            styles.iconBox,
+            {
+              backgroundColor: meta.bg,
+              borderColor: `${meta.color}30`,
+            },
+          ]}
         >
           {renderCategoryIcon()}
         </View>
 
-        <View className="flex-1">
-          <Text style={{ color: colors.text }} className="text-sm font-bold tracking-tight">
-            {categoryName}
+        <View style={styles.textWrap}>
+          <Text numberOfLines={1} style={[styles.titleText, { color: colors.text }]}>
+            {primaryTitle}
           </Text>
-          <Text numberOfLines={1} style={{ color: colors.muted }} className="text-xs mt-0.5">
-            {expense.description ? `${expense.description} · ` : ''}
-            {formattedDate}
-          </Text>
+          <View style={styles.subRow}>
+            <View style={[styles.catBadge, { backgroundColor: `${meta.color}18` }]}>
+              <Text style={[styles.catBadgeText, { color: meta.color }]}>
+                {categoryName}
+              </Text>
+            </View>
+            {formattedDate ? (
+              <Text style={[styles.dateText, { color: colors.muted }]}>
+                {formattedDate}
+              </Text>
+            ) : null}
+          </View>
         </View>
       </View>
 
-      {/* Amount & Actions */}
-      <View className="flex-row items-center space-x-2">
-        <Text className="text-sm font-extrabold text-rose-500 mr-2">
+      {/* Right: Amount & Edit/Delete */}
+      <View style={styles.rightSection}>
+        <Text style={styles.amountText}>
           -{formatCurrency(expense.amount, currency)}
         </Text>
 
         {onEdit ? (
           <Pressable
             onPress={() => onEdit(expense)}
-            className="p-1.5 rounded-lg active:bg-slate-700/30"
+            style={styles.actionBtn}
             hitSlop={6}
+            accessibilityLabel="Edit expense"
           >
             <Edit3 size={14} color={colors.muted} />
           </Pressable>
@@ -107,13 +126,89 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
         {onDelete ? (
           <Pressable
             onPress={() => onDelete(expense.id)}
-            className="p-1.5 rounded-lg active:bg-red-500/20"
+            style={styles.deleteBtn}
             hitSlop={6}
+            accessibilityLabel="Delete expense"
           >
-            <Trash2 size={14} color="#EF4444" />
+            <Trash2 size={14} color="#F43F5E" />
           </Pressable>
         ) : null}
       </View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  rowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    marginBottom: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  iconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  textWrap: {
+    flex: 1,
+  },
+  titleText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+  },
+  catBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  catBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  dateText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  amountText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#F43F5E',
+    marginRight: 8,
+    fontVariant: ['tabular-nums'],
+  },
+  actionBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(148, 163, 184, 0.12)',
+    marginRight: 4,
+  },
+  deleteBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(244, 63, 94, 0.12)',
+  },
+});

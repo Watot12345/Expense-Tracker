@@ -150,16 +150,48 @@ export function parseExpense(input: string): ParsedExpense | null {
   };
 }
 
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  PHP: '₱',
+  EUR: '€',
+  GBP: '£',
+  INR: '₹',
+  JPY: '¥',
+  CNY: '¥',
+  KRW: '₩',
+  CAD: 'CA$',
+  AUD: 'A$',
+  SGD: 'S$',
+  NZD: 'NZ$',
+  HKD: 'HK$',
+  MYR: 'RM',
+  THB: '฿',
+  VND: '₫',
+  IDR: 'Rp',
+  CHF: 'CHF',
+  AED: 'AED',
+  SAR: 'SAR',
+  BRL: 'R$',
+  MXN: 'MX$',
+  ZAR: 'R',
+};
+
+export function getCurrencySymbol(currency: string = 'USD'): string {
+  const clean = (currency || 'USD').trim();
+  if (!clean) return '$';
+  const upper = clean.toUpperCase();
+  if (CURRENCY_SYMBOLS[upper]) {
+    return CURRENCY_SYMBOLS[upper];
+  }
+  // If user entered a custom symbol or code (e.g. "₿", "RM", "SEK", "₱"), use it directly
+  return clean;
+}
+
 export function formatCurrency(amount: number, currency: string = 'USD'): string {
-  const symbols: Record<string, string> = {
-    USD: '$',
-    PHP: '₱',
-    EUR: '€',
-    GBP: '£',
-    INR: '₹',
-  };
-  const sym = symbols[currency] || '$';
-  return `${sym}${amount.toFixed(2)}`;
+  const sym = getCurrencySymbol(currency);
+  const needsSpace = /^[A-Za-z]{2,4}$/.test(sym);
+  const numPart = Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+  return `${sym}${needsSpace ? ' ' : ''}${numPart}`;
 }
 
 /**
@@ -176,10 +208,12 @@ export async function parseTransactionsWithAI(
     return { transactions: [], source: 'local-fallback', isDegraded: false };
   }
 
-  // 1. Try Supabase Edge Function
+  // 1. Try Supabase Edge Function (with fast 1.5s timeout so UI never stalls)
   try {
     const endpoint = `${SUPABASE_URL}/functions/v1/ai-parse-transaction`;
     const token = userToken || 'demo-token-123';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1500);
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -188,7 +222,9 @@ export async function parseTransactionsWithAI(
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ text }),
+      signal: controller.signal,
     });
+    clearTimeout(timer);
 
     if (response.ok) {
       const data = await response.json();

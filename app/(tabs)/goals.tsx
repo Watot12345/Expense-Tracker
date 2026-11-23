@@ -13,9 +13,21 @@ import { Target, Plus, X } from 'lucide-react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useTheme } from '@/hooks/useTheme';
-import { GoalCard } from '@/components/GoalCard';
+import { GoalCard, renderGoalIcon } from '@/components/GoalCard';
 
-const EMOJI_OPTIONS = ['🏖️', '📱', '🚗', '🏠', '✈️', '💻', '🎓', '💍', '🎮', '🚲'];
+const ICON_OPTIONS = [
+  'Target',
+  'Palmtree',
+  'Smartphone',
+  'Car',
+  'Home',
+  'Plane',
+  'Laptop',
+  'GraduationCap',
+  'Gem',
+  'Gamepad2',
+  'Bike',
+];
 
 export default function GoalsScreen() {
   const { colors, isDark } = useTheme();
@@ -25,7 +37,7 @@ export default function GoalsScreen() {
   const [title, setTitle] = useState('');
   const [target, setTarget] = useState('');
   const [current, setCurrent] = useState('');
-  const [selectedEmoji, setSelectedEmoji] = useState('🎯');
+  const [selectedIcon, setSelectedIcon] = useState('Target');
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiRef = useRef<any>(null);
 
@@ -43,13 +55,13 @@ export default function GoalsScreen() {
       title: title.trim(),
       target: targetNum,
       current: currentNum,
-      icon: selectedEmoji,
+      icon: selectedIcon,
     });
 
     setTitle('');
     setTarget('');
     setCurrent('');
-    setSelectedEmoji('🎯');
+    setSelectedIcon('Target');
     setModalVisible(false);
   };
 
@@ -76,13 +88,13 @@ export default function GoalsScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 116 }}
       >
         {/* Header */}
         <View className="flex-row justify-between items-center mt-2 mb-5">
           <View>
             <Text style={{ color: colors.text }} className="text-2xl font-black tracking-tight">
-              Savings Goals 🎯
+              Savings Goals
             </Text>
             <Text style={{ color: colors.muted }} className="text-xs font-medium mt-0.5">
               Turn your dreams into achievable milestones
@@ -117,10 +129,11 @@ export default function GoalsScreen() {
             </Pressable>
           </View>
         ) : (
-          goals.map((g) => (
+          goals.map((g, idx) => (
             <GoalCard
               key={g.id}
               goal={g}
+              index={idx}
               currency={currency}
               onAddFunds={addFundsToGoal}
               onDelete={handleDelete}
@@ -206,24 +219,27 @@ export default function GoalsScreen() {
                 />
               </View>
 
-              {/* Emoji Icons */}
+              {/* Goal Icons */}
               <View className="mb-6">
                 <Text style={{ color: colors.muted }} className="text-xs font-semibold mb-2">
                   Select Icon
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
-                  {EMOJI_OPTIONS.map((emoji) => (
-                    <Pressable
-                      key={emoji}
-                      onPress={() => setSelectedEmoji(emoji)}
-                      style={{
-                        backgroundColor: selectedEmoji === emoji ? '#6366F1' : isDark ? '#1E293B' : '#F1F5F9',
-                      }}
-                      className="w-11 h-11 rounded-2xl items-center justify-center active:scale-95"
-                    >
-                      <Text className="text-xl">{emoji}</Text>
-                    </Pressable>
-                  ))}
+                  {ICON_OPTIONS.map((iconName) => {
+                    const isSelected = selectedIcon === iconName;
+                    return (
+                      <Pressable
+                        key={iconName}
+                        onPress={() => setSelectedIcon(iconName)}
+                        style={{
+                          backgroundColor: isSelected ? '#6366F1' : isDark ? '#1E293B' : '#F1F5F9',
+                        }}
+                        className="w-11 h-11 rounded-2xl items-center justify-center active:scale-95"
+                      >
+                        {renderGoalIcon(iconName, isSelected ? '#FFFFFF' : colors.muted, 20)}
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
 

@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Wallet, Eye, EyeOff, ArrowDownLeft, ArrowUpRight, Plus, Download, Camera, Landmark } from 'lucide-react-native';
+import {
+  Wallet,
+  Eye,
+  EyeOff,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Plus,
+  Download,
+  Camera,
+  Landmark,
+} from 'lucide-react-native';
 import { formatCurrency } from '@/lib/pennyAI';
 import { useTheme } from '@/hooks/useTheme';
+import { AnimatedProgressBar } from '@/components/AnimatedPrimitives';
 
 interface BalanceCardProps {
   balance: number;
@@ -31,102 +42,119 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const [isMasked, setIsMasked] = useState(false);
   const { isDark } = useTheme();
 
+  const spendRatio = income > 0 ? Math.min(100, Math.round((expense / income) * 100)) : 0;
+  const savingsRate = income > 0 ? Math.max(0, Math.round(((income - expense) / income) * 100)) : 0;
+
   return (
-    <View className="rounded-[28px] overflow-hidden shadow-xl mb-5">
+    <View
+      style={[
+        styles.outerCard,
+        {
+          shadowColor: isDark ? '#000000' : '#0F172A',
+          shadowOpacity: isDark ? 0.4 : 0.16,
+        },
+      ]}
+    >
       <LinearGradient
-        colors={isDark ? ['#1E293B', '#0F172A'] : ['#1E293B', '#111827']}
+        colors={isDark ? ['#162033', '#0F172A'] : ['#1E293B', '#0F172A']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        className="p-6 relative"
+        style={styles.gradientInner}
       >
-        {/* Subtle decorative glow */}
-        <View
-          style={{
-            position: 'absolute',
-            top: -40,
-            right: -40,
-            width: 140,
-            height: 140,
-            borderRadius: 70,
-            backgroundColor: 'rgba(99, 102, 241, 0.25)',
-          }}
-        />
-
-        {/* Card Header: Label & Privacy Eye Toggle */}
-        <View className="flex-row justify-between items-center mb-2">
-          <View className="flex-row items-center space-x-2">
-            <Wallet size={15} color="#94A3B8" />
-            <Text className="text-xs uppercase tracking-widest font-semibold text-slate-400">
-              Current Balance
-            </Text>
+        {/* Header: Label, Savings Rate Pill & Privacy Toggle */}
+        <View style={styles.headerRow}>
+          <View style={styles.rowCenter}>
+            <View style={styles.walletIconBox}>
+              <Wallet size={14} color="#A5B4FC" />
+            </View>
+            <Text style={styles.headerLabel}>NET BALANCE</Text>
           </View>
-          <Pressable
-            onPress={() => setIsMasked((prev) => !prev)}
-            className="p-1.5 rounded-full bg-slate-800/80 active:opacity-70"
-            hitSlop={8}
-          >
-            {isMasked ? <EyeOff size={16} color="#94A3B8" /> : <Eye size={16} color="#94A3B8" />}
-          </Pressable>
+
+          <View style={styles.rowCenter}>
+            {income > 0 && !isMasked ? (
+              <View style={styles.savedPill}>
+                <Text style={styles.savedPillText}>{savingsRate}% SAVED</Text>
+              </View>
+            ) : null}
+
+            <Pressable
+              onPress={() => setIsMasked((prev) => !prev)}
+              style={styles.eyeBtn}
+              hitSlop={8}
+              accessibilityLabel={isMasked ? 'Show balance' : 'Hide balance'}
+            >
+              {isMasked ? (
+                <EyeOff size={15} color="#CBD5E1" />
+              ) : (
+                <Eye size={15} color="#CBD5E1" />
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {/* Balance Amount */}
-        <Text className="text-4xl font-extrabold text-white tracking-tight my-1">
+        <Text style={styles.balanceText}>
           {isMasked ? '••••••••' : formatCurrency(balance, currency)}
         </Text>
 
+        {/* Cashflow Utilization Micro-Bar */}
+        {income > 0 ? (
+          <View style={{ marginTop: 8, marginBottom: 4 }}>
+            <AnimatedProgressBar
+              progress={spendRatio}
+              color={spendRatio > 85 ? '#FB7185' : spendRatio > 65 ? '#FBBF24' : '#34D399'}
+              trackColor="rgba(255, 255, 255, 0.12)"
+              height={5}
+            />
+          </View>
+        ) : null}
+
         {/* Cashflow Row */}
-        <View className="flex-row justify-between items-center mt-4 pt-4 border-t border-slate-700/60">
-          <View className="flex-row items-center space-x-2">
-            <View className="w-8 h-8 rounded-full bg-emerald-500/20 items-center justify-center">
+        <View style={styles.cashflowRow}>
+          <View style={styles.rowCenter}>
+            <View style={styles.incomeIconBox}>
               <ArrowDownLeft size={16} color="#34D399" />
             </View>
             <View>
-              <Text className="text-[11px] text-slate-400 font-medium">Income</Text>
-              <Text className="text-sm font-bold text-emerald-400">
+              <Text style={styles.cashflowCaption}>INCOME</Text>
+              <Text style={styles.incomeValue}>
                 {isMasked ? '••••' : formatCurrency(income, currency)}
               </Text>
             </View>
           </View>
 
-          <View className="flex-row items-center space-x-2">
-            <View className="w-8 h-8 rounded-full bg-rose-500/20 items-center justify-center">
+          <View style={styles.rowCenter}>
+            <View style={styles.expenseIconBox}>
               <ArrowUpRight size={16} color="#FB7185" />
             </View>
             <View>
-              <Text className="text-[11px] text-slate-400 font-medium">Expenses</Text>
-              <Text className="text-sm font-bold text-rose-400">
+              <Text style={styles.cashflowCaption}>EXPENSES</Text>
+              <Text style={styles.expenseValue}>
                 {isMasked ? '••••' : formatCurrency(expense, currency)}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Action Pills Row */}
-        <View className="flex-row items-center space-x-2 mt-5">
-          <Pressable
-            onPress={onAddExpense}
-            className="flex-1 flex-row items-center justify-center py-2.5 px-3 rounded-2xl bg-indigo-600 active:bg-indigo-700 shadow-md"
-          >
-            <Plus size={16} color="#FFFFFF" />
-            <Text className="text-white text-xs font-bold ml-1">Expense</Text>
+        {/* Action Buttons Row */}
+        <View style={styles.actionsRow}>
+          <Pressable onPress={onAddExpense} style={styles.primaryActionBtn}>
+            <Plus size={15} color="#FFFFFF" strokeWidth={2.5} />
+            <Text style={styles.primaryActionText}>Expense</Text>
           </Pressable>
 
-          <Pressable
-            onPress={onAddIncome}
-            className="flex-1 flex-row items-center justify-center py-2.5 px-3 rounded-2xl bg-slate-800/90 active:bg-slate-700 border border-slate-700/80"
-          >
-            <Plus size={16} color="#34D399" />
-            <Text className="text-emerald-400 text-xs font-bold ml-1">Income</Text>
+          <Pressable onPress={onAddIncome} style={styles.secondaryActionBtn}>
+            <Plus size={15} color="#34D399" strokeWidth={2.5} />
+            <Text style={styles.secondaryActionText}>Income</Text>
           </Pressable>
 
           {onScanReceipt ? (
             <Pressable
               onPress={onScanReceipt}
               accessibilityLabel="Scan receipt with AI"
-              className="py-2.5 px-3 rounded-2xl bg-amber-500/20 active:bg-amber-500/30 border border-amber-500/40 items-center justify-center flex-row"
+              style={styles.iconActionBtnAmber}
             >
-              <Camera size={15} color="#F59E0B" />
-              <Text className="text-amber-400 text-xs font-bold ml-1">Scan</Text>
+              <Camera size={15} color="#FBBF24" />
             </Pressable>
           ) : null}
 
@@ -134,19 +162,19 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             <Pressable
               onPress={onOpenBankSync}
               accessibilityLabel="Sync bank and spending accounts"
-              className="py-2.5 px-3 rounded-2xl bg-indigo-500/20 active:bg-indigo-500/30 border border-indigo-500/40 items-center justify-center flex-row"
+              style={styles.iconActionBtnIndigo}
             >
-              <Landmark size={15} color="#818CF8" />
-              <Text className="text-indigo-300 text-xs font-bold ml-1">Sync</Text>
+              <Landmark size={15} color="#A5B4FC" />
             </Pressable>
           ) : null}
 
           {onExportCSV ? (
             <Pressable
               onPress={onExportCSV}
-              className="py-2.5 px-3 rounded-2xl bg-slate-800/90 active:bg-slate-700 border border-slate-700/80 items-center justify-center"
+              accessibilityLabel="Export transactions to CSV"
+              style={styles.iconActionBtnNeutral}
             >
-              <Download size={16} color="#94A3B8" />
+              <Download size={15} color="#CBD5E1" />
             </Pressable>
           ) : null}
         </View>
@@ -154,3 +182,194 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  outerCard: {
+    borderRadius: 26,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    marginBottom: 16,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  gradientInner: {
+    padding: 22,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  rowCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  walletIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  headerLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: '#CBD5E1',
+  },
+  savedPill: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.28)',
+    marginRight: 8,
+  },
+  savedPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#6EE7B7',
+  },
+  eyeBtn: {
+    padding: 7,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  balanceText: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.8,
+    marginVertical: 4,
+    fontVariant: ['tabular-nums'],
+  },
+  cashflowRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  incomeIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  expenseIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 113, 133, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  cashflowCaption: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  incomeValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#34D399',
+    fontVariant: ['tabular-nums'],
+  },
+  expenseValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FB7185',
+    fontVariant: ['tabular-nums'],
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 18,
+    gap: 8,
+  },
+  primaryActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: '#6366F1',
+  },
+  primaryActionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+    marginLeft: 5,
+  },
+  secondaryActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  secondaryActionText: {
+    color: '#6EE7B7',
+    fontSize: 12,
+    fontWeight: '800',
+    marginLeft: 5,
+  },
+  iconActionBtnAmber: {
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconActionBtnIndigo: {
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(99, 102, 241, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 180, 252, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconActionBtnNeutral: {
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

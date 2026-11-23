@@ -9,16 +9,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Coins, Check, ArrowRight, User, DollarSign } from 'lucide-react-native';
+import { Check, ArrowRight, User, DollarSign } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
+import { PennyFlowLogo } from '@/components/PennyFlowLogo';
 
 const CURRENCIES = [
-  { code: 'USD', label: '🇺🇸 USD ($)' },
-  { code: 'PHP', label: '🇵🇭 PHP (₱)' },
-  { code: 'EUR', label: '🇪🇺 EUR (€)' },
-  { code: 'GBP', label: '🇬🇧 GBP (£)' },
-  { code: 'INR', label: '🇮🇳 INR (₹)' },
+  { code: 'USD', label: 'USD ($)' },
+  { code: 'PHP', label: 'PHP (₱)' },
+  { code: 'EUR', label: 'EUR (€)' },
+  { code: 'GBP', label: 'GBP (£)' },
+  { code: 'INR', label: 'INR (₹)' },
 ];
 
 export default function SetupScreen() {
@@ -72,11 +73,9 @@ export default function SetupScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
         {/* Header */}
         <View className="items-center mb-6">
-          <View className="w-14 h-14 rounded-3xl bg-indigo-600 items-center justify-center shadow-lg shadow-indigo-500/30 mb-3">
-            <Coins size={28} color="#FFFFFF" />
-          </View>
-          <Text style={{ color: colors.text }} className="text-2xl font-black tracking-tight">
-            Welcome to PennyFlow! 🎉
+          <PennyFlowLogo size={68} animated />
+          <Text style={{ color: colors.text }} className="text-2xl font-black tracking-tight mt-4">
+            Welcome to Penny<Text style={{ color: '#10B981' }}>Flow</Text>!
           </Text>
           <Text style={{ color: colors.muted }} className="text-xs font-medium mt-1">
             Let's get you set up in 3 quick steps
@@ -203,12 +202,12 @@ export default function SetupScreen() {
                 Select your currency
               </Text>
               <Text style={{ color: colors.muted }} className="text-xs mb-4">
-                You can change this anytime from Settings
+                Choose a preset or enter a custom code/symbol below
               </Text>
 
-              <View className="space-y-2 mb-6">
+              <View className="space-y-2 mb-4">
                 {CURRENCIES.map((c) => {
-                  const isSelected = currency === c.code;
+                  const isSelected = currency.toUpperCase() === c.code;
                   return (
                     <Pressable
                       key={c.code}
@@ -232,6 +231,26 @@ export default function SetupScreen() {
                 })}
               </View>
 
+              <View className="mb-6">
+                <Text style={{ color: colors.muted }} className="text-xs font-semibold mb-1.5">
+                  Or Custom Currency Code / Symbol
+                </Text>
+                <TextInput
+                  value={currency}
+                  onChangeText={setCurrency}
+                  placeholder="e.g. JPY, CAD, KRW, ₩, ฿, RM"
+                  placeholderTextColor={colors.muted}
+                  maxLength={8}
+                  autoCapitalize="characters"
+                  style={{
+                    color: colors.text,
+                    backgroundColor: isDark ? 'rgba(30, 41, 59, 0.6)' : '#F8FAFC',
+                    borderColor: '#6366F1',
+                  }}
+                  className="py-3 px-4 rounded-2xl border text-sm font-bold"
+                />
+              </View>
+
               <Pressable
                 onPress={handleFinish}
                 disabled={loading}
@@ -240,7 +259,7 @@ export default function SetupScreen() {
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text className="text-white font-bold text-base">Complete Setup 🚀</Text>
+                  <Text className="text-white font-bold text-base">Complete Setup</Text>
                 )}
               </Pressable>
             </View>
